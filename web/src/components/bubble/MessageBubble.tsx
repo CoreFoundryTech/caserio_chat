@@ -5,16 +5,17 @@ import type { Message, ChatSettings } from '../../stores/useChatStore';
 import { getMessageBorderColor } from '../../utils/bubble/messageBorderColor';
 import { scaleClasses } from '../../utils/bubble/scaleClasses';
 import { sanitizeAndColorize } from '../../utils/sanitize';
+import { useTranslation } from '../../hooks/useTranslation';
 
-// ✅ Configuración de Tipos Visuales
-const MESSAGE_TYPES = {
-    me: { icon: User, label: 'ME', color: '#FFFFFF' },
-    do: { icon: Eye, label: 'ENTORNO', color: '#EF4444' },
-    radio: { icon: Radio, label: 'RADIO', color: '#10B981' },
-    police: { icon: Shield, label: 'POLICÍA', color: '#3B82F6' },
-    ems: { icon: Ambulance, label: 'EMS', color: '#10B981' },
-    system: { icon: Terminal, label: 'SISTEMA', color: '#6B7280' },
-    job: { icon: Briefcase, label: 'TRABAJO', color: '#8B5CF6' },
+// ✅ Configuración de Tipos Visuales (iconos y colores)
+const MESSAGE_TYPE_CONFIG = {
+    me: { icon: User, color: '#FFFFFF' },
+    do: { icon: Eye, color: '#EF4444' },
+    radio: { icon: Radio, color: '#10B981' },
+    police: { icon: Shield, color: '#3B82F6' },
+    ems: { icon: Ambulance, color: '#10B981' },
+    system: { icon: Terminal, color: '#6B7280' },
+    job: { icon: Briefcase, color: '#8B5CF6' },
 } as const;
 
 interface MessageBubbleProps {
@@ -23,12 +24,16 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble = React.memo(({ message, settings }: MessageBubbleProps) => {
+    const { t } = useTranslation();
     const borderColor = getMessageBorderColor(message, settings.primaryColor);
     const scaleClass = scaleClasses[settings.scale];
 
     // ✅ Seleccionar configuración según message.type
-    const typeConfig = MESSAGE_TYPES[message.type || 'system'] || MESSAGE_TYPES.system;
+    const typeConfig = MESSAGE_TYPE_CONFIG[message.type || 'system'] || MESSAGE_TYPE_CONFIG.system;
     const Icon = typeConfig.icon;
+
+    // ✅ Obtener label traducido
+    const typeLabel = t(`ui.message_types.${message.type || 'system'}`);
 
     // Sanitización de seguridad
     const sanitizedContent = useMemo(() => {
@@ -63,7 +68,7 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
                         style={{ color: typeConfig.color }}
                     >
                         <Icon size={12} strokeWidth={2.5} />
-                        <span>{typeConfig.label}</span>
+                        <span>{typeLabel}</span>
                         <span className="opacity-50">•</span>
 
                         {!isStreamerMode ? (

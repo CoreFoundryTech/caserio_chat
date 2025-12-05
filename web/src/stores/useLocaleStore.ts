@@ -1,5 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import esTranslations from '../locales/es.json';
+import enTranslations from '../locales/en.json';
+
+const LOCALE_FILES = {
+    es: esTranslations,
+    en: enTranslations
+};
 
 interface LocaleStore {
     locale: 'en' | 'es';
@@ -11,16 +18,12 @@ interface LocaleStore {
 export const useLocaleStore = create<LocaleStore>()(persist(
     (set, get) => ({
         locale: 'es', // Default to Spanish
-        translations: {},
+        translations: esTranslations, // ✅ CRITICAL: Load default translations immediately
 
-        setLocale: async (locale) => {
-            try {
-                const response = await fetch(`/locales/${locale}.json`);
-                const translations = await response.json();
-                set({ locale, translations });
-            } catch (error) {
-                console.error(`Failed to load locale ${locale}:`, error);
-            }
+        setLocale: (locale) => {
+            const translations = LOCALE_FILES[locale];
+            console.log(`%c[LOCALE] Loading ${locale}:`, 'color: #00ff00', translations);
+            set({ locale, translations });
         },
 
         t: (key, fallback = key) => {

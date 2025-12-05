@@ -6,6 +6,7 @@ import type { ChatSettings } from '../../stores/useChatStore';
 import { COLORS } from '../../utils/bubble/colorPalette';
 import type { Position } from '../../utils/bubble/positionClasses';
 import classNames from 'classnames';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const POSITIONS: Position[] = [
     'top-left', 'top-center', 'top-right',
@@ -14,6 +15,7 @@ const POSITIONS: Position[] = [
 ];
 
 export function SettingsModal() {
+    const { t } = useTranslation();
     const { isSettingsModalOpen, toggleSettingsModal, settings, updateSettings } = useChatStore();
 
     // Local state for preview before saving
@@ -60,8 +62,8 @@ export function SettingsModal() {
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
                             <div>
-                                <h2 className="text-xl font-bold text-white tracking-tight">EDIT CHAT</h2>
-                                <p className="text-xs text-white/40 font-medium uppercase tracking-wider">Appearance</p>
+                                <h2 className="text-xl font-bold text-white tracking-tight">{t('ui.settings.edit_chat')}</h2>
+                                <p className="text-xs text-white/40 font-medium uppercase tracking-wider">{t('ui.settings.appearance')}</p>
                             </div>
                             <button
                                 onClick={handleCancel}
@@ -77,7 +79,7 @@ export function SettingsModal() {
                             {/* SECTION 1: MAIN COLOR */}
                             <section>
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Main Color</h3>
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('ui.settings.main_color')}</h3>
                                     <div
                                         className="w-6 h-6 rounded-full shadow-inner"
                                         style={{ backgroundColor: localSettings.primaryColor }}
@@ -101,7 +103,7 @@ export function SettingsModal() {
                             {/* SECTION 2: POSITION */}
                             <section>
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Position</h3>
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('ui.settings.position')}</h3>
                                     <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded">
                                         {localSettings.position?.replace(/-/g, ' ').toUpperCase() || 'TOP LEFT'}
                                     </span>
@@ -135,7 +137,7 @@ export function SettingsModal() {
                             {/* SECTION 3: SIZE */}
                             <section>
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Size</h3>
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('ui.settings.size')}</h3>
                                 </div>
                                 <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-lg">
                                     {(['small', 'medium', 'large'] as const).map((size) => (
@@ -152,7 +154,7 @@ export function SettingsModal() {
                                                 backgroundColor: localSettings.scale === size ? localSettings.primaryColor : 'transparent'
                                             }}
                                         >
-                                            {size}
+                                            {t(`ui.settings.${size}`)}
                                         </button>
                                     ))}
                                 </div>
@@ -167,13 +169,13 @@ export function SettingsModal() {
                                 className="flex-1 py-3 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-colors uppercase tracking-wide text-sm flex items-center justify-center gap-2"
                             >
                                 <Check size={16} strokeWidth={3} />
-                                Save Changes
+                                {t('ui.settings.save_changes')}
                             </button>
                             <button
                                 onClick={handleCancel}
                                 className="flex-1 py-3 bg-white/5 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors uppercase tracking-wide text-sm"
                             >
-                                Close
+                                {t('ui.settings.close')}
                             </button>
                         </div>
                     </motion.div>

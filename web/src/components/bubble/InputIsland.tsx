@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Settings, Smile } from 'lucide-react';
 import { useChatStore } from '../../stores/useChatStore';
 import { fetchNui } from '../../utils/fetchNui';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function InputIsland() {
+    const { t } = useTranslation();
     const { isVisible, settings, toggleSettingsModal } = useChatStore();
     const [inputValue, setInputValue] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
@@ -68,7 +70,7 @@ export function InputIsland() {
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Message..."
+                                placeholder={t('ui.input_placeholder')}
                                 className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/30 text-base font-medium"
                             />
 
@@ -96,7 +98,7 @@ export function InputIsland() {
 
                     {/* Helper Text */}
                     <div className="text-center mt-2 text-xs text-white/30 font-medium tracking-wide">
-                        PRESS <span className="font-bold text-white/50">ESC</span> TO CANCEL
+                        {t('ui.input_helper').toUpperCase()}
                     </div>
                 </motion.div>
             )}
