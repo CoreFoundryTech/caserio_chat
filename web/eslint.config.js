@@ -18,6 +18,10 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      // ESTO ES LO NUEVO: Elimina logs y debuggers en producción
+      esbuild: {
+        drop: ['console', 'debugger'],
+      },
     },
   },
 ])
