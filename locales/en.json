@@ -1,0 +1,48 @@
+{
+    "ui": {
+        "channels": {
+            "system": "System",
+            "ooc": "Out of Character",
+            "radio": "Radio",
+            "job": "Job",
+            "police": "Police",
+            "ems": "EMS",
+            "all": "All"
+        },
+        "input_placeholder": "Type a message...",
+        "settings": {
+            "title": "Chat Settings",
+            "opacity": "Background Opacity",
+            "font_size": "Font Size",
+            "streamer_mode": "Streamer Mode",
+            "language": "Language"
+        },
+        "notifications": {
+            "new_message": "New message",
+            "no_permission": "You don't have permission to use this channel"
+        }
+    },
+    "commands": {
+        "me": {
+            "usage": "Usage: /me [action]",
+            "description": "Describe an action in roleplay"
+        },
+        "do": {
+            "usage": "Usage: /do [description]",
+            "description": "Describe surroundings in roleplay"
+        },
+        "ooc": {
+            "usage": "Usage: /ooc [message]",
+            "description": "Send an out-of-character message"
+        },
+        "police": {
+            "usage": "Usage: /police [message]",
+            "description": "Send a message to police channel"
+        }
+    },
+    "errors": {
+        "spam_detected": "Slow down! You're sending messages too fast.",
+        "blacklisted_word": "Your message contains prohibited words.",
+        "no_permission_channel": "You don't have permission to use this channel."
+    }
+}

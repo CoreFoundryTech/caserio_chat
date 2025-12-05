@@ -1,0 +1,48 @@
+{
+    "ui": {
+        "channels": {
+            "system": "Sistema",
+            "ooc": "Fuera de Personaje",
+            "radio": "Radio",
+            "job": "Trabajo",
+            "police": "Policía",
+            "ems": "Paramédicos",
+            "all": "Todos"
+        },
+        "input_placeholder": "Escribe un mensaje...",
+        "settings": {
+            "title": "Configuración del Chat",
+            "opacity": "Opacidad del Fondo",
+            "font_size": "Tamaño de Letra",
+            "streamer_mode": "Modo Streamer",
+            "language": "Idioma"
+        },
+        "notifications": {
+            "new_message": "Nuevo mensaje",
+            "no_permission": "No tienes permiso para usar este canal"
+        }
+    },
+    "commands": {
+        "me": {
+            "usage": "Uso: /me [acción]",
+            "description": "Describe una acción en roleplay"
+        },
+        "do": {
+            "usage": "Uso: /do [descripción]",
+            "description": "Describe el entorno en roleplay"
+        },
+        "ooc": {
+            "usage": "Uso: /ooc [mensaje]",
+            "description": "Envía un mensaje fuera de personaje"
+        },
+        "police": {
+            "usage": "Uso: /police [mensaje]",
+            "description": "Envía un mensaje al canal policial"
+        }
+    },
+    "errors": {
+        "spam_detected": "¡Más despacio! Estás enviando mensajes muy rápido.",
+        "blacklisted_word": "Tu mensaje contiene palabras prohibidas.",
+        "no_permission_channel": "No tienes permiso para usar este canal."
+    }
+}
