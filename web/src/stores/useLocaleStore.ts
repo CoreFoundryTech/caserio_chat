@@ -22,7 +22,6 @@ export const useLocaleStore = create<LocaleStore>()(persist(
 
         setLocale: (locale) => {
             const translations = LOCALE_FILES[locale];
-            console.log(`%c[LOCALE] Loading ${locale}:`, 'color: #00ff00', translations);
             set({ locale, translations });
         },
 

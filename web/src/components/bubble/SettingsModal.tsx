@@ -13,7 +13,6 @@ const POSITIONS: Position[] = [
     'bottom-left', 'bottom-center', 'bottom-right'
 ];
 
-// Tamaños - MISMO para chat e input
 const CHAT_SIZES = {
     small: 350,
     medium: 420,
@@ -26,7 +25,7 @@ export function SettingsModal() {
     const [localSettings, setLocalSettings] = useState<ChatSettings>(settings);
 
     const chatWidth = CHAT_SIZES[settings.scale] || CHAT_SIZES.medium;
-    const modalOffset = chatWidth + 30; // 30px de margen
+    const modalOffset = chatWidth + 30;
 
     useEffect(() => {
         if (isSettingsModalOpen) setLocalSettings(settings);
@@ -36,14 +35,19 @@ export function SettingsModal() {
 
     const getModalStyles = (): React.CSSProperties => {
         const pos = settings.position || 'top-left';
-        const base: React.CSSProperties = { position: 'fixed', zIndex: 100, width: '200px' };
+        const base: React.CSSProperties = {
+            position: 'fixed',
+            zIndex: 100,
+            width: '240px', // Un poco más ancho para comodidad
+            pointerEvents: 'auto', // CRÍTICO: Permitir clicks
+        };
 
         if (pos.includes('left')) base.left = `${modalOffset}px`;
         else if (pos.includes('right')) base.right = `${modalOffset}px`;
         else base.left = `calc(50% + ${chatWidth / 2 + 20}px)`;
 
         if (pos.includes('top')) base.top = '10px';
-        else if (pos.includes('bottom')) base.bottom = '60px';
+        else if (pos.includes('bottom')) base.bottom = '80px';
         else base.top = '20%';
 
         return base;
@@ -53,87 +57,141 @@ export function SettingsModal() {
         <AnimatePresence>
             {isSettingsModalOpen && (
                 <>
+                    {/* Click outside to close (Invisible shield) */}
                     <div onClick={toggleSettingsModal} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
+
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.12 }}
-                        style={{
-                            ...getModalStyles(),
-                            backgroundColor: 'rgba(10, 10, 10, 0.8)',
-                            backdropFilter: 'blur(12px)',
-                            borderRadius: '12px',
-                            overflow: 'hidden',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                        }}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        style={getModalStyles()}
                     >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                            <span style={{ color: 'white', fontSize: '12px', fontWeight: 600 }}>{t('ui.settings.edit_chat')}</span>
-                            <button onClick={toggleSettingsModal} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', opacity: 0.5 }}>
-                                <X size={14} color="white" />
-                            </button>
-                        </div>
+                        {/* Estructura Miami Gradient Border (Igual que InputIsland) */}
+                        <div className="relative group rounded-xl p-[1px]">
+                            <div className="absolute inset-0 rounded-xl opacity-80 bg-gradient-to-r from-miami-pink via-miami-purple to-miami-cyan"></div>
 
-                        <div style={{ padding: '12px' }}>
-                            <div style={{ marginBottom: '12px' }}>
-                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    {t('ui.settings.main_color')}
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '3px' }}>
-                                    {COLORS.map((color) => (
-                                        <button key={color} onClick={() => setLocalSettings(prev => ({ ...prev, primaryColor: color }))}
-                                            style={{
-                                                aspectRatio: '1', backgroundColor: color, borderRadius: '4px', cursor: 'pointer',
-                                                border: localSettings.primaryColor === color ? '2px solid white' : '1px solid rgba(255,255,255,0.1)',
-                                            }} />
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div style={{ marginBottom: '12px' }}>
-                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    {t('ui.settings.position')}
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px', padding: '6px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
-                                    {POSITIONS.map((pos) => (
-                                        <button key={pos} onClick={() => setLocalSettings(prev => ({ ...prev, position: pos }))}
-                                            style={{
-                                                aspectRatio: '16/9', borderRadius: '4px', cursor: 'pointer', border: 'none',
-                                                backgroundColor: localSettings.position === pos ? localSettings.primaryColor : 'rgba(255,255,255,0.05)',
-                                            }} />
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    {t('ui.settings.size')}
-                                </div>
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                    {(['small', 'medium', 'large'] as const).map((size) => (
-                                        <button key={size} onClick={() => setLocalSettings(prev => ({ ...prev, scale: size }))}
-                                            style={{
-                                                flex: 1, padding: '6px', fontSize: '10px', borderRadius: '6px', cursor: 'pointer', border: 'none',
-                                                fontWeight: localSettings.scale === size ? 600 : 400, color: 'white', textTransform: 'capitalize',
-                                                backgroundColor: localSettings.scale === size ? localSettings.primaryColor : 'rgba(255,255,255,0.05)',
-                                            }}>
-                                            {t(`ui.settings.${size}`)}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style={{ padding: '10px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                            <button onClick={handleSave} style={{
-                                width: '100%', padding: '8px', fontSize: '11px', fontWeight: 600, borderRadius: '8px',
-                                backgroundColor: 'white', color: 'black', border: 'none', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                            {/* Glass Content */}
+                            <div style={{
+                                background: 'rgba(0, 0, 0, 0.1)', // 10% Transparencia
+                                backdropFilter: 'blur(15px)',
+                                borderRadius: '12px',
+                                position: 'relative',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'hidden'
                             }}>
-                                <Check size={12} />
-                                {t('ui.settings.save_changes')}
-                            </button>
+                                {/* Header */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                    <span style={{ color: 'white', fontSize: '13px', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                                        {t('ui.settings.edit_chat')}
+                                    </span>
+                                    {/* Botón Cerrar Mejorado */}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); toggleSettingsModal(); }}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.1)',
+                                            border: 'none',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            borderRadius: '50%',
+                                            width: '24px',
+                                            height: '24px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transition: 'background 0.2s'
+                                        }}
+                                        className="hover:bg-white/20"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+
+                                {/* Content */}
+                                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                                    {/* Colors */}
+                                    <div>
+                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '8px', textShadow: '0 1px 1px black' }}>
+                                            {t('ui.settings.main_color')}
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '6px' }}>
+                                            {COLORS.map((color) => (
+                                                <button key={color} onClick={() => setLocalSettings(prev => ({ ...prev, primaryColor: color }))}
+                                                    style={{
+                                                        aspectRatio: '1', borderRadius: '4px', cursor: 'pointer', backgroundColor: color, border: 'none',
+                                                        boxShadow: localSettings.primaryColor === color ? '0 0 0 2px white' : '0 2px 4px rgba(0,0,0,0.3)',
+                                                        transform: localSettings.primaryColor === color ? 'scale(1.1)' : 'scale(1)'
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Position */}
+                                    <div>
+                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '8px', textShadow: '0 1px 1px black' }}>
+                                            {t('ui.settings.position')}
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', padding: '4px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+                                            {POSITIONS.map((pos) => (
+                                                <button key={pos} onClick={() => setLocalSettings(prev => ({ ...prev, position: pos }))}
+                                                    style={{
+                                                        aspectRatio: '16/9', borderRadius: '4px', cursor: 'pointer', border: 'none',
+                                                        background: localSettings.position === pos ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                                        position: 'relative'
+                                                    }}
+                                                >
+                                                    <div style={{
+                                                        width: '12px', height: '6px', borderRadius: '2px', margin: 'auto',
+                                                        background: localSettings.position === pos ? localSettings.primaryColor : 'rgba(255,255,255,0.2)',
+                                                        boxShadow: localSettings.position === pos ? `0 0 8px ${localSettings.primaryColor}` : 'none'
+                                                    }} />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Size */}
+                                    <div>
+                                        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '8px', textShadow: '0 1px 1px black' }}>
+                                            {t('ui.settings.size')}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+                                            {(['small', 'medium', 'large'] as const).map((size) => (
+                                                <button key={size} onClick={() => setLocalSettings(prev => ({ ...prev, scale: size }))}
+                                                    style={{
+                                                        flex: 1, padding: '8px', fontSize: '10px', borderRadius: '4px', cursor: 'pointer', border: 'none',
+                                                        textTransform: 'uppercase', fontWeight: 'bold',
+                                                        background: localSettings.scale === size ? 'white' : 'transparent',
+                                                        color: localSettings.scale === size ? 'black' : 'rgba(255,255,255,0.5)'
+                                                    }}
+                                                >
+                                                    {t(`ui.settings.${size}`)}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer */}
+                                <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}>
+                                    <button onClick={handleSave}
+                                        style={{
+                                            width: '100%', padding: '10px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                            background: `linear-gradient(45deg, ${localSettings.primaryColor}, ${localSettings.primaryColor}dd)`,
+                                            color: 'white', fontWeight: 'bold', fontSize: '12px',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                            boxShadow: `0 4px 15px -4px ${localSettings.primaryColor}`,
+                                            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                                        }}
+                                    >
+                                        <Check size={16} />
+                                        {t('ui.settings.save_changes')}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
                 </>

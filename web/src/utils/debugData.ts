@@ -1,25 +1,31 @@
-/**
- * Debug data utility for browser development
- * Simulates NUI messages when running outside FiveM
- */
-
+// function isEnvBrowser moved inline to avoid dependencies
 export const isEnvBrowser = (): boolean => !(window as any).GetParentResourceName;
 
+// FLAG TO TOGGLE DEBUG MODE
+const ENABLE_DEBUG_MOCKS = false;
+
 // Mock NUI messages for development
-if (import.meta.env.DEV && isEnvBrowser()) {
+if (import.meta.env.DEV && isEnvBrowser() && ENABLE_DEBUG_MOCKS) {
     console.log('%c[DEBUG MODE] Running in browser - mock data enabled', 'color: #00ff00; font-weight: bold');
-    console.log('%cChat will auto-populate with test messages every 3 seconds', 'color: #ffaa00');
+
+    // Set background for transparency testing
+    document.body.style.backgroundImage = "url('https://i.imgur.com/3m352cO.jpeg')"; // GTA V screenshot
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+
+    // Ensure chat is visible
+    setTimeout(() => {
+        window.postMessage({ action: 'TOGGLE_VISIBILITY', data: true }, '*');
+    }, 100);
 
     // Simulate mock messages every 3 seconds
     const mockMessages = [
-        { type: 'me', author: '^1John Doe', message: '* se rasca la cabeza', channel: 'system', tags: ['RP'] },
-        { type: 'do', author: 'Jane Smith', message: '** Hay un cigarro en la arena **', channel: 'system', tags: ['RP'] },
-        { type: 'police', author: '^4Officer Mike', message: '10-4, heading to location', channel: 'police', tags: ['POLICE'] },
-        { type: 'ems', author: '^2Dr. Sarah', message: 'Medic en route to Legion Square', channel: 'ems', tags: ['EMS'] },
-        { type: 'system', author: '^8Admin', message: '^3Server restart in 10 minutes', channel: 'system', tags: ['ADMIN', 'IMPORTANT'] },
-        { type: 'radio', author: '^6DJ Music', message: '🎵 Now playing: Los Angeles', channel: 'radio', tags: [] },
-        { type: 'job', author: 'Boss', message: 'Team meeting at the warehouse', channel: 'job', tags: [] },
-        { type: 'system', author: '^9Support', message: 'Type /help for commands', channel: 'system', tags: ['INFO'] },
+        { type: 'me', author: 'John Doe', message: '* se rasca la cabeza *', channel: 'system', tags: [] },
+        { type: 'do', author: 'Jane Smith', message: '*** Se ve un revolver en la mesa ***', channel: 'system', tags: [] },
+        { type: 'police', author: 'Oficial Mike', message: '10-4, central, procediendo al código 3.', channel: 'police', tags: [] },
+        { type: 'ems', author: 'Paramédico Sarah', message: 'Unidad médica en camino a Pillbox.', channel: 'ems', tags: [] },
+        { type: 'radio', author: 'Frecuencia 1', message: '¿Alguien me copia por radio?', channel: 'radio', tags: [] },
+        { type: 'system', author: 'SISTEMA', message: 'Has recibido $500 en efectivo.', channel: 'system', tags: [] },
     ] as const;
 
     let messageIndex = 0;
@@ -35,7 +41,6 @@ if (import.meta.env.DEV && isEnvBrowser()) {
                 timestamp: Date.now(),
             }
         }, '*');
-        console.log('%c[MOCK] Sent initial message', 'color: #00aaff', mockMsg);
     }, 500);
 
     // Then send every 3 seconds
@@ -50,7 +55,6 @@ if (import.meta.env.DEV && isEnvBrowser()) {
                 timestamp: Date.now(),
             }
         }, '*');
-        console.log('%c[MOCK] New message', 'color: #00aaff', mockMsg);
     }, 3000);
 }
 
@@ -72,8 +76,4 @@ if (isEnvBrowser()) {
             tags: []
         });
     };
-
-    console.log('%c[DEBUG HELPERS] Available commands:', 'color: #ffaa00; font-weight: bold');
-    console.log('  - window.sendTestMessage("mensaje", "autor", "canal")');
-    console.log('  - window.mockNuiMessage("ADD_MESSAGE", {...})');
 }

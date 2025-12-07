@@ -19,13 +19,28 @@ export default {
                 ],
             },
             colors: {
-                glass: {
-                    bg: 'rgba(17, 24, 39, 0.7)', // gray-900 with opacity
-                    border: 'rgba(255, 255, 255, 0.1)',
+                miami: {
+                    pink: '#ec4899', // pink-500 equivalent
+                    purple: '#a855f7', // purple-500
+                    cyan: '#06b6d4', // cyan-500
+                    glass: 'rgba(0, 0, 0, 0.2)',
+                    hover: 'rgba(255, 255, 255, 0.05)',
                 }
             },
+            boxShadow: {
+                neon: '0 0 15px rgba(236, 72, 153, 0.3)',
+            },
             backdropBlur: {
-                xs: '2px',
+                md: '12px',
+            },
+            animation: {
+                'fade-in': 'fadeIn 0.3s ease-in-out',
+            },
+            keyframes: {
+                fadeIn: {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                }
             }
         },
     },

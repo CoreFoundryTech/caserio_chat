@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useChatStore } from '../../stores/useChatStore';
 import { MessageBubble } from './MessageBubble';
 
-// Tamaños - MISMO para chat e input
+// Constantes compartidas
 const CHAT_SIZES = {
     small: 350,
     medium: 420,
@@ -22,29 +22,27 @@ export function MessageFeed() {
     }, [messages]);
 
     const getPositionStyles = (): React.CSSProperties => {
-        const pos = settings.position || 'top-left';
+        // ALINEACIÓN PERFECTA CON InputIsland
+        // Input está en: left: 20px, top: 50%, width: chatWidth
+        // Feed debe estar: left: 20px, bottom: calc(50% + 30px), width: chatWidth
         const base: React.CSSProperties = {
             position: 'fixed',
-            zIndex: 10,
-            width: `${chatWidth}px`,
-            maxHeight: '210px',
+            left: '20px', // MISMA X QUE INPUT
+            width: `${chatWidth}px`, // MISMO ANCHO QUE INPUT
+            bottom: 'calc(50% + 30px)', // Justo encima del input
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
-            padding: '10px',
-            paddingBottom: '0',
+            gap: '4px',
             overflowY: 'auto',
             overflowX: 'hidden',
             scrollbarWidth: 'none',
+            pointerEvents: 'auto',
+            zIndex: 40,
+            // Máscara de desvanecimiento en la parte superior
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)',
+            maxHeight: '35vh' // Altura razonable
         };
-
-        if (pos.includes('left')) base.left = '10px';
-        else if (pos.includes('right')) base.right = '10px';
-        else { base.left = '50%'; base.transform = 'translateX(-50%)'; }
-
-        if (pos.includes('top')) base.top = '10px';
-        else if (pos.includes('bottom')) base.bottom = '60px';
-        else base.top = '20%';
 
         return base;
     };
