@@ -1,73 +1,63 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useChatStore } from '../../stores/useChatStore';
 import { MessageBubble } from './MessageBubble';
-import { positionClasses } from '../../utils/bubble/positionClasses';
-import classNames from 'classnames';
+
+// Tamaños - MISMO para chat e input
+const CHAT_SIZES = {
+    small: 350,
+    medium: 420,
+    large: 500,
+};
 
 export function MessageFeed() {
     const messages = useChatStore((state) => state.messages);
     const settings = useChatStore((state) => state.settings);
-    const isVisible = useChatStore((state) => state.isVisible);
-
-    const containerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const [isUserScrolling, setIsUserScrolling] = useState(false);
 
-    // Detectar scroll manual del usuario para pausar el auto-scroll
-    const handleScroll = () => {
-        if (!containerRef.current) return;
+    const chatWidth = CHAT_SIZES[settings.scale] || CHAT_SIZES.medium;
 
-        const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-        // Si el usuario sube más de 50px del fondo, consideramos que está leyendo el historial
-        const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
-        setIsUserScrolling(!isAtBottom);
+    const getPositionStyles = (): React.CSSProperties => {
+        const pos = settings.position || 'top-left';
+        const base: React.CSSProperties = {
+            position: 'fixed',
+            zIndex: 10,
+            width: `${chatWidth}px`,
+            maxHeight: '210px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+            padding: '10px',
+            paddingBottom: '0',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            scrollbarWidth: 'none',
+        };
+
+        if (pos.includes('left')) base.left = '10px';
+        else if (pos.includes('right')) base.right = '10px';
+        else { base.left = '50%'; base.transform = 'translateX(-50%)'; }
+
+        if (pos.includes('top')) base.top = '10px';
+        else if (pos.includes('bottom')) base.bottom = '60px';
+        else base.top = '20%';
+
+        return base;
     };
 
-    // Auto-scroll inteligente: Solo baja si el usuario NO está leyendo arriba
-    useEffect(() => {
-        if (!isUserScrolling && messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [messages, isUserScrolling]);
-
-    const positionClass = positionClasses[settings.position] || positionClasses['top-left'];
-
-    // Lógica crítica: Solo permitir interacción si el chat está abierto
-    const pointerEventsClass = isVisible ? 'pointer-events-auto' : 'pointer-events-none';
-    const scrollClass = isVisible ? 'overflow-y-auto' : 'overflow-hidden';
+    if (messages.length === 0) return null;
 
     return (
-        <div
-            ref={containerRef}
-            onScroll={handleScroll}
-            className={classNames(
-                "fixed z-10 flex flex-col gap-2 p-4 w-full max-w-full",
-                "max-h-[50vh]", // ✅ Límite de altura: 50% de la pantalla
-                positionClass,
-                pointerEventsClass,
-                scrollClass
-            )}
-            style={{
-                scrollbarWidth: 'none', // Ocultar barra de scroll visualmente (estética)
-                // Máscara para desvanecer mensajes antiguos en la parte superior
-                // TEMPORALMENTE DESACTIVADO PARA DEBUG
-                // maskImage: 'linear-gradient(to bottom, transparent, black 15%)',
-                // WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 15%)',
-            }}
-        >
+        <div style={getPositionStyles()}>
             <AnimatePresence mode="popLayout">
                 {messages.map((msg) => (
-                    <MessageBubble
-                        key={msg.id}
-                        message={msg}
-                        settings={settings}
-                    />
+                    <MessageBubble key={msg.id} message={msg} settings={settings} />
                 ))}
             </AnimatePresence>
-
-            {/* Ancla invisible para auto-scroll */}
             <div ref={messagesEndRef} />
         </div>
     );

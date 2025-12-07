@@ -28,14 +28,42 @@ RegisterKeyMapping('openChat', 'Open Chat', 'keyboard', 'T')
 -- Receive Message from Server
 RegisterNetEvent('chat:addMessage')
 AddEventHandler('chat:addMessage', function(data)
-    local messageData = {
-        id = tostring(math.random(1000000)),
-        channel = data.args and data.args[1] or 'system',
-        author = data.args and data.args[2] or 'System',
-        message = data.args and data.args[3] or data.args and data.args[1] or '',
-        timestamp = os.time() * 1000, -- Convert to milliseconds
-        tags = data.tags or {}
-    }
+    local messageData = {}
+    
+    -- Formato 1: Mensaje directo del servidor (commands /me, /do, etc)
+    if data.id and data.message then
+        messageData = {
+            id = data.id,
+            type = data.type or 'system',
+            channel = data.channel or 'system',
+            author = data.author or 'System',
+            message = data.message,
+            timestamp = data.timestamp or GetGameTimer(),
+            tags = data.tags or {}
+        }
+    -- Formato 2: args[] (broadcast normal)
+    elseif data.args then
+        messageData = {
+            id = tostring(math.random(1000000, 9999999)),
+            type = 'system',
+            channel = data.args[1] or 'system',
+            author = data.args[2] or 'System',
+            message = data.args[3] or data.args[1] or '',
+            timestamp = GetGameTimer(),
+            tags = data.tags or {}
+        }
+    else
+        -- Fallback: intentar usar data directamente
+        messageData = {
+            id = tostring(math.random(1000000, 9999999)),
+            type = 'system',
+            channel = 'system',
+            author = 'System',
+            message = tostring(data) or '',
+            timestamp = GetGameTimer(),
+            tags = {}
+        }
+    end
     
     SendNUIMessage({
         action = 'ADD_MESSAGE',

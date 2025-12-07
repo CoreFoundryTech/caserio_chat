@@ -48,7 +48,7 @@ export const useChatStore = create<ChatState>()(persist(
             opacity: 80,
             fontSize: 14,
             streamerMode: false,
-            position: 'top-left',
+            position: 'top-right',
             scale: 'medium',
             primaryColor: '#F97316', // Orange from reference
         },
@@ -63,16 +63,12 @@ export const useChatStore = create<ChatState>()(persist(
     }),
     {
         name: 'caserio-chat-storage',
-        version: 2, // ✅ Incrementar versión para limpiar mensajes viejos
-        migrate: (persistedState: any, version: number) => {
-            // Si viene de versión antigua, limpiar mensajes
-            if (version < 2) {
-                console.log('%c[MIGRATION] Clearing old messages format', 'color: #ff9900');
-                return {
-                    ...persistedState,
-                    messages: [], // Limpiar mensajes viejos
-                };
-            }
+        version: 3, // Increment version
+        partialize: (state) => ({
+            settings: state.settings,
+            // Don't persist messages or isVisible
+        }),
+        migrate: (persistedState: any) => {
             return persistedState;
         }
     }

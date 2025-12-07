@@ -1,22 +1,28 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Eye, Radio, Briefcase, Shield, Ambulance, Terminal } from 'lucide-react';
 import type { Message, ChatSettings } from '../../stores/useChatStore';
 import { getMessageBorderColor } from '../../utils/bubble/messageBorderColor';
-import { scaleClasses } from '../../utils/bubble/scaleClasses';
 import { sanitizeAndColorize } from '../../utils/sanitize';
-import { useTranslation } from '../../hooks/useTranslation';
+import { useChatStore } from '../../stores/useChatStore';
 
-// ✅ Configuración de Tipos Visuales (iconos y colores)
 const MESSAGE_TYPE_CONFIG = {
-    me: { icon: User, color: '#FFFFFF' },
-    do: { icon: Eye, color: '#EF4444' },
-    radio: { icon: Radio, color: '#10B981' },
-    police: { icon: Shield, color: '#3B82F6' },
-    ems: { icon: Ambulance, color: '#10B981' },
-    system: { icon: Terminal, color: '#6B7280' },
-    job: { icon: Briefcase, color: '#8B5CF6' },
+    me: { icon: User, label: 'YO', color: '#F472B6' },
+    do: { icon: Eye, label: 'ENTORNO', color: '#FBBF24' },
+    radio: { icon: Radio, label: 'RADIO', color: '#34D399' },
+    police: { icon: Shield, label: 'POLICÍA', color: '#60A5FA' },
+    ems: { icon: Ambulance, label: 'EMS', color: '#F87171' },
+    system: { icon: Terminal, label: 'SISTEMA', color: '#9CA3AF' },
+    job: { icon: Briefcase, label: 'TRABAJO', color: '#A78BFA' },
 } as const;
+
+const SCALE_SIZES = {
+    small: { fontSize: '11px', padding: '6px 10px', iconSize: 10 },
+    medium: { fontSize: '13px', padding: '8px 12px', iconSize: 12 },
+    large: { fontSize: '15px', padding: '10px 14px', iconSize: 14 },
+};
+
+const MESSAGE_VISIBLE_DURATION = 8000;
 
 interface MessageBubbleProps {
     message: Message;
@@ -24,76 +30,63 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble = React.memo(({ message, settings }: MessageBubbleProps) => {
-    const { t } = useTranslation();
-    const borderColor = getMessageBorderColor(message, settings.primaryColor);
-    const scaleClass = scaleClasses[settings.scale];
+    const isVisible = useChatStore((state) => state.isVisible);
+    const [isExpired, setIsExpired] = useState(false);
 
-    // ✅ Seleccionar configuración según message.type
+    const borderColor = getMessageBorderColor(message, settings.primaryColor);
+    const scale = SCALE_SIZES[settings.scale] || SCALE_SIZES.medium;
     const typeConfig = MESSAGE_TYPE_CONFIG[message.type || 'system'] || MESSAGE_TYPE_CONFIG.system;
     const Icon = typeConfig.icon;
 
-    // ✅ Obtener label traducido
-    const typeLabel = t(`ui.message_types.${message.type || 'system'}`);
+    useEffect(() => {
+        const timer = setTimeout(() => setIsExpired(true), MESSAGE_VISIBLE_DURATION);
+        return () => clearTimeout(timer);
+    }, []);
 
-    // Sanitización de seguridad
-    const sanitizedContent = useMemo(() => {
-        return {
-            author: sanitizeAndColorize(message.author),
-            message: sanitizeAndColorize(message.message)
-        };
-    }, [message.author, message.message]);
+    const sanitizedContent = useMemo(() => ({
+        author: sanitizeAndColorize(message.author),
+        message: sanitizeAndColorize(message.message)
+    }), [message.author, message.message]);
 
-    const isStreamerMode = settings.streamerMode;
+    const shouldFade = isExpired && !isVisible;
 
     return (
         <motion.div
             layout
-            initial={{ opacity: 0, x: -20, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className={`relative group ${scaleClass} w-fit max-w-[500px]`}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: shouldFade ? 0 : 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ type: "spring", stiffness: 500, damping: 35, opacity: { duration: 0.2 } }}
+            style={{ maxWidth: '100%', width: 'fit-content', pointerEvents: shouldFade ? 'none' : 'auto' }}
         >
-            <div
-                className="backdrop-blur-md rounded-r-lg shadow-lg flex flex-col overflow-hidden transition-all duration-300"
-                style={{
-                    backgroundColor: `rgba(0, 0, 0, ${settings.opacity / 100})`,
-                    borderLeft: `4px solid ${borderColor}`
-                }}
-            >
-                <div className="px-4 py-2">
-                    {/* ✅ HEADER ROW: Icono + Tipo + Nombre */}
-                    <div
-                        className="flex items-center gap-1.5 mb-1.5 text-[10px] font-bold uppercase tracking-wider opacity-80"
-                        style={{ color: typeConfig.color }}
-                    >
-                        <Icon size={12} strokeWidth={2.5} />
-                        <span>{typeLabel}</span>
-                        <span className="opacity-50">•</span>
-
-                        {!isStreamerMode ? (
-                            <span
-                                className="font-normal opacity-70"
-                                dangerouslySetInnerHTML={{ __html: sanitizedContent.author }}
-                            />
-                        ) : (
-                            <span className="font-normal opacity-70">***</span>
-                        )}
-
-                        {/* Tags Extra (Admin, VIP, etc.) */}
-                        {message.tags?.map(tag => (
-                            <span key={tag} className="text-[9px] px-1 py-0.5 bg-white/10 rounded ml-1">
-                                {tag}
-                            </span>
-                        ))}
+            <div style={{
+                backgroundColor: `rgba(0, 0, 0, ${Math.min((settings.opacity || 70) / 100, 0.7)})`,
+                backdropFilter: 'blur(8px)',
+                borderRadius: '0 10px 10px 0',
+                borderLeft: `3px solid ${borderColor}`,
+                padding: scale.padding,
+            }}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '3px',
+                        padding: '2px 6px', backgroundColor: typeConfig.color + '20', borderRadius: '6px',
+                    }}>
+                        <Icon size={scale.iconSize} color={typeConfig.color} />
+                        <span style={{ fontSize: '9px', fontWeight: 'bold', color: typeConfig.color, letterSpacing: '0.5px' }}>
+                            {typeConfig.label}
+                        </span>
                     </div>
-
-                    {/* CUERPO DEL MENSAJE */}
-                    <div
-                        className="text-white/90 leading-snug break-words font-medium"
-                        dangerouslySetInnerHTML={{ __html: sanitizedContent.message }}
-                    />
+                    {!settings.streamerMode ? (
+                        <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.7)', fontWeight: 500 }}
+                            dangerouslySetInnerHTML={{ __html: sanitizedContent.author }} />
+                    ) : (
+                        <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)' }}>Oculto</span>
+                    )}
                 </div>
+                {/* Mensaje */}
+                <div style={{ color: 'rgba(255, 255, 255, 0.95)', fontSize: scale.fontSize, lineHeight: 1.5, wordBreak: 'break-word' }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedContent.message }} />
             </div>
         </motion.div>
     );
