@@ -5,6 +5,7 @@ import { useChatStore } from './stores/useChatStore';
 import { MessageFeed } from './components/bubble/MessageFeed';
 import { InputIsland } from './components/bubble/InputIsland';
 import { SettingsModal } from './components/bubble/SettingsModal';
+import { ChannelTabs } from './components/bubble/ChannelTabs'; // ✅ Importar
 
 function App() {
   const setLocale = useLocaleStore((state) => state.setLocale);
@@ -36,6 +37,15 @@ function App() {
       if (action === 'ADD_MESSAGE' && data) {
         addMessage(data);
       }
+
+      // NUEVOS HANDLERS PARA SUGERENCIAS DINÁMICAS
+      if (action === 'ADD_SUGGESTION') {
+        useChatStore.getState().addSuggestion(data);
+      }
+
+      if (action === 'REMOVE_SUGGESTION') {
+        useChatStore.getState().removeSuggestion(data.name);
+      }
     };
 
     window.addEventListener('message', handleMessage);
@@ -44,6 +54,9 @@ function App() {
 
   return (
     <div style={{ width: '100%', height: '100%', background: 'transparent', overflow: 'hidden' }}>
+      {/* ✅ AÑADIR TABS AQUÍ */}
+      <ChannelTabs />
+
       <MessageFeed />
       <InputIsland />
       <SettingsModal />

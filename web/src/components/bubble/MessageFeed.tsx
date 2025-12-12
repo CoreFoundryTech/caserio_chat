@@ -1,8 +1,8 @@
-import { useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { useChatStore } from '../../stores/useChatStore';
 import { MessageBubble } from './MessageBubble';
 
-// Constantes compartidas
 const CHAT_SIZES = {
     small: 350,
     medium: 420,
@@ -11,49 +11,83 @@ const CHAT_SIZES = {
 
 export function MessageFeed() {
     const messages = useChatStore((state) => state.messages);
+    const activeChannel = useChatStore((state) => state.activeChannel);
     const settings = useChatStore((state) => state.settings);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const isVisible = useChatStore((state) => state.isVisible);
+
+    // Referencia para controlar el scroll programáticamente si hace falta
+    const virtuosoRef = useRef<VirtuosoHandle>(null);
+    const [isHovered, setIsHovered] = useState(false);
 
     const chatWidth = CHAT_SIZES[settings.scale] || CHAT_SIZES.medium;
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    // Filtrado de mensajes (useMemo para optimizar)
+    const filteredMessages = useMemo(() => {
+        if (activeChannel === 'all') return messages;
+        return messages.filter(msg => msg.channel === activeChannel);
+    }, [messages, activeChannel]);
 
+    // Estilos del contenedor
     const getPositionStyles = (): React.CSSProperties => {
-        // ALINEACIÓN PERFECTA CON InputIsland
-        // Input está en: left: 20px, top: 50%, width: chatWidth
-        // Feed debe estar: left: 20px, bottom: calc(50% + 30px), width: chatWidth
-        const base: React.CSSProperties = {
+        return {
             position: 'fixed',
-            left: '20px', // MISMA X QUE INPUT
-            width: `${chatWidth}px`, // MISMO ANCHO QUE INPUT
-            bottom: 'calc(50% + 30px)', // Justo encima del input
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            scrollbarWidth: 'none',
-            pointerEvents: 'auto',
+            left: '20px',
+            width: `${chatWidth}px`,
+            bottom: 'calc(50% + 30px)',
+            height: '35vh', // Altura fija necesaria para virtualización
             zIndex: 40,
-            // Máscara de desvanecimiento en la parte superior
+
+            // Máscara para desvanecimiento suave arriba
             maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)',
             WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)',
-            maxHeight: '35vh' // Altura razonable
-        };
 
-        return base;
+            // Pointer events condicionales (CRÍTICO)
+            pointerEvents: isVisible ? 'auto' : 'none',
+        };
     };
 
-    if (messages.length === 0) return null;
+    if (filteredMessages.length === 0) return null;
 
     return (
-        <div style={getPositionStyles()}>
-            {messages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} settings={settings} />
-            ))}
-            <div ref={messagesEndRef} />
+        <div
+            style={getPositionStyles()}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            {/* COMPONENTE VIRTUOSO */}
+            <Virtuoso
+                ref={virtuosoRef}
+                style={{ height: '100%', width: '100%' }}
+                data={filteredMessages}
+
+                // Renderizado de cada item
+                itemContent={(_index, msg) => (
+                    <div className="pb-1 pr-2"> {/* Padding para separar burbujas */}
+                        <MessageBubble message={msg} settings={settings} />
+                    </div>
+                )}
+
+                // Auto-scroll inteligente nativo
+                // "auto": Sigue abajo si estaba abajo. Si subes, se queda donde estás.
+                followOutput={isHovered ? false : 'auto'}
+
+                // Alineación inicial: Pegado abajo
+                alignToBottom={true}
+
+                // Ocultar scrollbar visualmente pero mantener funcionalidad
+                className="scrollbar-hide"
+            />
+
+            {/* Estilo inline para ocultar scrollbar en este componente específico */}
+            <style>{`
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                .scrollbar-hide {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
         </div>
     );
 }

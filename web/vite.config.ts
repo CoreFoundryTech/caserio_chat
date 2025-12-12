@@ -7,12 +7,24 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    target: 'es2018',
+    // CAMBIO A ES2022: Menos polyfills, código más limpio, mejor rendimiento
+    target: 'es2022',
+    // Aumentar límite de warning para chunks grandes (emoji picker)
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]'
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name].[ext]',
+        // CODE SPLITTING: Separar emoji-picker en su propio chunk
+        manualChunks: (id) => {
+          if (id.includes('emoji-picker-react')) {
+            return 'emoji-picker';
+          }
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        }
       }
     }
   }

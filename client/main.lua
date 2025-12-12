@@ -3,6 +3,10 @@
 
 print('^2[Caserio Chat]^7 Client main.lua cargado correctamente')
 
+-- ANTI-SPAM DE AUDIO
+local lastSoundTime = 0
+local SOUND_COOLDOWN = 200 -- ms (ajusta a tu gusto)
+
 local chatDisabled = GetConvar('chat_disable', 'false') == 'true'
 
 Citizen.CreateThread(function()
@@ -74,6 +78,20 @@ AddEventHandler('chat:addMessage', function(data)
         }
     end
     
+    -- DETECCIÓN DE MENCIÓN: Comprobar si el mensaje contiene el nombre del jugador
+    local playerName = GetPlayerName(PlayerId())
+    local isMention = false
+    
+    if messageData.message and playerName then
+        -- Búsqueda case-insensitive
+        if string.find(string.lower(messageData.message), string.lower(playerName)) then
+            isMention = true
+        end
+    end
+    
+    -- Añadir propiedad isMention al messageData
+    messageData.isMention = isMention
+    
     SendNUIMessage({
         action = 'ADD_MESSAGE',
         data = messageData
@@ -107,8 +125,12 @@ AddEventHandler('chat:addMessage', function(data)
         end
     end
     
-    -- Play the sound (subtle volume)
-    PlaySoundFrontend(-1, soundName, soundSet, true)
+    -- Play the sound (CON PROTECCI\u00d3N ANTI-SPAM)
+    local currentTime = GetGameTimer()
+    if (currentTime - lastSoundTime) > SOUND_COOLDOWN then
+        PlaySoundFrontend(-1, soundName, soundSet, true)
+        lastSoundTime = currentTime
+    end
 end)
 
 -- NUI Callbacks
@@ -126,4 +148,30 @@ RegisterNUICallback('close', function(data, cb)
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'TOGGLE_VISIBILITY', data = false })
     cb('ok')
+end)
+
+-- SISTEMA DE SUGERENCIAS DINÁMICAS
+
+AddEventHandler('chat:addSuggestion', function(name, help, params)
+    SendNUIMessage({
+        action = 'ADD_SUGGESTION',
+        data = {
+            name = name,
+            help = help,
+            params = params or {}
+        }
+    })
+end)
+
+AddEventHandler('chat:removeSuggestion', function(name)
+    SendNUIMessage({
+        action = 'REMOVE_SUGGESTION',
+        data = { name = name }
+    })
+end)
+
+-- Solicitar sugerencias al iniciar (para scripts que cargaron antes que el chat)
+Citizen.CreateThread(function()
+    Wait(1000) -- Esperar un segundo para asegurar que la UI cargó
+    TriggerEvent('chat:refreshSuggestions')
 end)

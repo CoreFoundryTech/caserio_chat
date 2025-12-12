@@ -1,41 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Settings } from 'lucide-react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { Send, Settings, Smile } from 'lucide-react';
+import type { EmojiClickData } from 'emoji-picker-react';
 import { useChatStore } from '../../stores/useChatStore';
 import { fetchNui } from '../../utils/fetchNui';
 import { useTranslation } from '../../hooks/useTranslation';
 
-const AVAILABLE_COMMANDS = [
-    { cmd: '/me', syntax: '/me [acción]', desc: 'Acción de roleplay' },
-    { cmd: '/do', syntax: '/do [descripción]', desc: 'Descripción de entorno' },
-    { cmd: '/ooc', syntax: '/ooc [mensaje]', desc: 'Fuera de personaje' },
-    { cmd: '/looc', syntax: '/looc [mensaje]', desc: 'OOC local' },
-    { cmd: '/twitter', syntax: '/twitter [tweet]', desc: 'Publicar en Twitter' },
-    { cmd: '/twt', syntax: '/twt [tweet]', desc: 'Twitter (corto)' },
-    { cmd: '/ad', syntax: '/ad [anuncio]', desc: 'Anuncio público' },
-    { cmd: '/news', syntax: '/news [noticia]', desc: 'Noticia de prensa' },
-    { cmd: '/police', syntax: '/police [mensaje]', desc: 'Canal de policía' },
-    { cmd: '/ems', syntax: '/ems [mensaje]', desc: 'Canal de emergencias' },
-    { cmd: '/admin', syntax: '/admin [mensaje]', desc: 'Canal de admin' },
-    { cmd: '/report', syntax: '/report [descripción]', desc: 'Reportar problema' },
-    { cmd: '/giveitem', syntax: '/giveitem [id] [item] [cant]', desc: 'Dar item' },
-    { cmd: '/givemoney', syntax: '/givemoney [id] [tipo] [cant]', desc: 'Dar dinero' },
-    { cmd: '/setjob', syntax: '/setjob [id] [job] [grade]', desc: 'Asignar trabajo' },
-    { cmd: '/goto', syntax: '/goto [id]', desc: 'Ir a jugador' },
-    { cmd: '/bring', syntax: '/bring [id]', desc: 'Traer jugador' },
-    { cmd: '/tp', syntax: '/tp [x] [y] [z]', desc: 'Teleport' },
-    { cmd: '/tpm', syntax: '/tpm', desc: 'TP a marcador' },
-    { cmd: '/noclip', syntax: '/noclip', desc: 'Noclip' },
-    { cmd: '/car', syntax: '/car [modelo]', desc: 'Spawn vehículo' },
-    { cmd: '/dv', syntax: '/dv', desc: 'Eliminar vehículo' },
-    { cmd: '/revive', syntax: '/revive [id]', desc: 'Revivir' },
-    { cmd: '/heal', syntax: '/heal [id]', desc: 'Curar' },
-    { cmd: '/kick', syntax: '/kick [id] [razón]', desc: 'Expulsar' },
-    { cmd: '/ban', syntax: '/ban [id] [tiempo] [razón]', desc: 'Banear' },
-    { cmd: '/txadmin', syntax: '/txadmin', desc: 'Panel txAdmin' },
-    { cmd: '/tx', syntax: '/tx', desc: 'txAdmin corto' },
-    { cmd: '/id', syntax: '/id', desc: 'Ver tu ID' },
-    { cmd: '/clear', syntax: '/clear', desc: 'Limpiar chat' },
-];
+// DYNAMIC IMPORT: Emoji picker solo se carga cuando el usuario lo abre
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
 export const CHAT_SIZES = {
     small: 350,
@@ -47,9 +18,26 @@ export function InputIsland() {
     const { t } = useTranslation();
     const { isVisible, settings, toggleSettingsModal } = useChatStore();
     const [inputValue, setInputValue] = useState('');
-    const [suggestions, setSuggestions] = useState<typeof AVAILABLE_COMMANDS>([]);
     const [isMounted, setIsMounted] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // NUEVOS ESTADOS PARA HISTORIAL
+    const [history, setHistory] = useState<string[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+
+    // OBTENER SUGERENCIAS DINÁMICAS DEL STORE
+    const suggestionsList = useChatStore((state) => state.suggestions);
+
+    // Tipo para sugerencias locales (UI)
+    interface LocalSuggestion {
+        cmd: string;
+        syntax: string;
+        desc: string;
+    }
+    const [suggestions, setSuggestions] = useState<LocalSuggestion[]>([]);
+
+    // ESTADO PARA EMOJI PICKER
+    const [showEmojis, setShowEmojis] = useState(false);
 
     const chatWidth = CHAT_SIZES[settings.scale] || CHAT_SIZES.medium;
 
@@ -65,7 +53,16 @@ export function InputIsland() {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!isVisible) return;
-            if (e.key === 'Escape') { e.preventDefault(); fetchNui('close'); }
+
+            // CIERRE INTELIGENTE: Si emoji picker está abierto, cerrarlo primero
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                if (showEmojis) {
+                    setShowEmojis(false); // Cerrar picker primero
+                } else {
+                    fetchNui('close'); // Cerrar chat
+                }
+            }
             if ((e.key === 't' || e.key === 'T') && document.activeElement !== inputRef.current) {
                 e.preventDefault();
                 inputRef.current?.focus();
@@ -73,23 +70,45 @@ export function InputIsland() {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isVisible]);
+    }, [isVisible, showEmojis]); // Agregar showEmojis a dependencias
 
     useEffect(() => {
         if (inputValue.startsWith('/')) {
             const query = inputValue.toLowerCase().split(' ')[0];
-            if (query.length >= 2) {
-                setSuggestions(AVAILABLE_COMMANDS.filter(c => c.cmd.toLowerCase().startsWith(query)).slice(0, 5));
+
+            // Mostrar si escribes al menos 1 caracter después del /
+            if (query.length >= 1) {
+                // Filtrar lista real del store
+                const matches = suggestionsList
+                    .filter(c => c.name.toLowerCase().startsWith(query))
+                    .slice(0, 5);
+
+                // Formatear para la UI
+                setSuggestions(matches.map(s => ({
+                    cmd: s.name,
+                    // Crea una sintaxis bonita: /comando [id] [razón]
+                    syntax: `${s.name} ${s.params ? s.params.map(p => `[${p.name}]`).join(' ') : ''}`,
+                    desc: s.help
+                })));
             } else {
                 setSuggestions([]);
             }
         } else {
             setSuggestions([]);
         }
-    }, [inputValue]);
+    }, [inputValue, suggestionsList]); // Agrega suggestionsList a dependencias
 
     const handleSubmit = async () => {
         if (!inputValue.trim()) return;
+
+        // 1. Guardar en historial (evitando duplicados seguidos)
+        setHistory(prev => {
+            // Si es igual al último, no lo guardes de nuevo
+            if (prev.length > 0 && prev[0] === inputValue) return prev;
+            return [inputValue, ...prev].slice(0, 50); // Máximo 50 comandos
+        });
+        setHistoryIndex(-1); // Resetear posición
+
         try {
             await fetchNui('sendMessage', { message: inputValue });
             setInputValue('');
@@ -99,7 +118,39 @@ export function InputIsland() {
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSubmit();
+        }
+
+        // LÓGICA FLECHAS HISTORIAL
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (history.length > 0) {
+                const nextIndex = Math.min(historyIndex + 1, history.length - 1);
+                setHistoryIndex(nextIndex);
+                setInputValue(history[nextIndex]);
+                // Mover cursor al final (pequeño truco de UX)
+                setTimeout(() => {
+                    if (inputRef.current) {
+                        inputRef.current.selectionStart = inputRef.current.selectionEnd = history[nextIndex].length;
+                    }
+                }, 0);
+            }
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (historyIndex > 0) {
+                const nextIndex = historyIndex - 1;
+                setHistoryIndex(nextIndex);
+                setInputValue(history[nextIndex]);
+            } else if (historyIndex === 0) {
+                setHistoryIndex(-1);
+                setInputValue('');
+            }
+        }
+
         if (e.key === 'Tab' && suggestions.length > 0) {
             e.preventDefault();
             const currentCmd = inputValue.split(' ')[0];
@@ -107,6 +158,13 @@ export function InputIsland() {
                 setInputValue(suggestions[0].cmd + ' ');
             }
         }
+    };
+
+    // MANEJADOR DE EMOJIS
+    const onEmojiClick = (emojiData: EmojiClickData) => {
+        setInputValue(prev => prev + emojiData.emoji);
+        // No cerramos el picker para permitir selección múltiple
+        inputRef.current?.focus();
     };
 
     return (
@@ -152,6 +210,13 @@ export function InputIsland() {
                                 className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/70 text-base font-medium"
                                 style={{ boxShadow: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
                             />
+                            <button
+                                onClick={() => setShowEmojis(!showEmojis)}
+                                className="p-1 hover:scale-110 transition text-white/90"
+                                title="Emojis"
+                            >
+                                <Smile size={20} />
+                            </button>
                             <button onClick={handleSubmit} className="p-1 hover:scale-110 transition text-white/90">
                                 <Send size={20} />
                             </button>
@@ -161,8 +226,44 @@ export function InputIsland() {
                         </div>
                     </div>
 
-                    {/* SUGGESTIONS */}
-                    {suggestions.length > 0 && (
+                    {/* EMOJI PICKER */}
+                    {showEmojis && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: 0,
+                                marginBottom: '10px',
+                                zIndex: 100
+                            }}
+                        >
+                            <Suspense fallback={
+                                <div style={{
+                                    width: chatWidth,
+                                    height: 350,
+                                    background: 'rgba(0,0,0,0.8)',
+                                    borderRadius: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white'
+                                }}>
+                                    Cargando emojis...
+                                </div>
+                            }>
+                                <EmojiPicker
+                                    onEmojiClick={onEmojiClick}
+                                    theme={'dark' as any}
+                                    width={chatWidth}
+                                    height={350}
+                                    lazyLoadEmojis={true}
+                                />
+                            </Suspense>
+                        </div>
+                    )}
+
+                    {/* SUGGESTIONS - Solo mostrar si el emoji picker NO está abierto */}
+                    {suggestions.length > 0 && !showEmojis && (
                         <div
                             className="mt-2 rounded-xl overflow-hidden border border-white/20 shadow-xl transition-opacity duration-200 ease-out"
                             style={{
@@ -173,16 +274,16 @@ export function InputIsland() {
                                 opacity: 1,
                             }}
                         >
-                                {suggestions.map((s) => (
-                                    <button
-                                        key={s.cmd}
-                                        onClick={() => { setInputValue(s.cmd + ' '); setSuggestions([]); inputRef.current?.focus(); }}
-                                        className="w-full text-left px-4 py-3 hover:bg-blue-50 flex flex-col transition-colors border-b border-gray-200 last:border-0"
-                                    >
-                                        <span className="text-blue-600 font-bold text-sm">{s.syntax}</span>
-                                        <span className="text-gray-500 text-xs">{s.desc}</span>
-                                    </button>
-                                ))}
+                            {suggestions.map((s) => (
+                                <button
+                                    key={s.cmd}
+                                    onClick={() => { setInputValue(s.cmd + ' '); setSuggestions([]); inputRef.current?.focus(); }}
+                                    className="w-full text-left px-4 py-3 hover:bg-blue-50 flex flex-col transition-colors border-b border-gray-200 last:border-0"
+                                >
+                                    <span className="text-blue-600 font-bold text-sm">{s.syntax}</span>
+                                    <span className="text-gray-500 text-xs">{s.desc}</span>
+                                </button>
+                            ))}
                         </div>
                     )}
                 </div>

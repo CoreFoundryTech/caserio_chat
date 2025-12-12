@@ -53,15 +53,27 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
 
     const shouldFade = isExpired && !isVisible;
 
+    // ESTILOS ESPECIALES PARA MENCIONES
+    const isMention = message.isMention || false;
+
     const bubbleStyle = {
         // MATCHING SCREENSHOT: Fondo blanco semi-transparente (Glassmorphism Claro)
-        // Esto evita los fondos negros típicos de transparencias oscuras
-        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        // Si es mención, añadir gradiente dorado sutil
+        background: isMention
+            ? 'linear-gradient(90deg, rgba(234, 179, 8, 0.15), rgba(234, 179, 8, 0.05))'
+            : 'rgba(255, 255, 255, 0.85)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
-        borderLeft: `3px solid ${accentColor}`,
-        // Sombra suave en lugar de borde brillante
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+
+        // Borde dorado si es mención, sino color del canal
+        borderLeft: isMention
+            ? `3px solid #EAB308`
+            : `3px solid ${accentColor}`,
+
+        // Sombra mejorada + resplandor dorado si es mención
+        boxShadow: isMention
+            ? '0 0 15px rgba(234, 179, 8, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
 
         // GPU Acceleration
         transform: 'translateZ(0)',
@@ -72,6 +84,9 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
         position: 'relative' as const,
         fontSize: sizeStyle.fontSize,
         color: '#1f2937', // Texto oscuro para fondo claro
+
+        // ✨ Animación de pulso para menciones
+        animation: isMention ? 'mentionPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
     };
 
     return (
@@ -120,7 +135,8 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
                         fontWeight: 500,
                         lineHeight: 1.4,
                         wordBreak: 'break-word',
-                        textShadow: '0 1px 0 rgba(255,255,255,0.5)' // Highlight shadow para "engraved" look
+                        // Sombra de texto sutil para nitidez extrema
+                        textShadow: '0px 0px 1px rgba(0,0,0,0.1)'
                     }}
                     dangerouslySetInnerHTML={{ __html: sanitizedContent.message }}
                 />
