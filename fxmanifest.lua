@@ -21,6 +21,7 @@ client_scripts {
 }
 
 server_scripts {
+    'server/bridge.lua',  -- Must load before main.lua
     'server/filters.lua',
     'server/main.lua'
 }

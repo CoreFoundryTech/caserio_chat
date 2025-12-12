@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 
 export interface ChatSettings {
     opacity: number;
-    fontSize: number; // Deprecated, kept for backward compatibility if needed, replaced by scale
     streamerMode: boolean;
 
     // New Bubble Chat Settings
@@ -62,7 +61,6 @@ export const useChatStore = create<ChatState>()(persist(
         unreadCounts: {},
         settings: {
             opacity: 80,
-            fontSize: 14,
             streamerMode: false,
             position: 'top-right',
             scale: 'medium',

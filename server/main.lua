@@ -18,6 +18,7 @@ end
 LoadLocale('en')
 LoadLocale('es')
 
+-- ✅ FIX CRÍTICO: Hacer T() global para que filters.lua pueda usarla
 function T(key)
     local keys = {}
     for k in string.gmatch(key, "[^.]+") do
@@ -34,11 +35,23 @@ function T(key)
     return value or key
 end
 
+-- ✅ SEGURIDAD: Inicializar seed de aleatoriedad
+math.randomseed(os.time())
+
 -- Broadcast Event
 RegisterNetEvent('chat:server:Broadcast')
 AddEventHandler('chat:server:Broadcast', function(msg)
     local src = source
     local name = GetPlayerName(src)
+    
+    -- ✅ SEGURIDAD: Validar longitud del mensaje
+    if string.len(msg) > 255 then
+        TriggerClientEvent('chat:addMessage', src, {
+            args = { 'system', 'Sistema', 'Mensaje demasiado largo (máximo 255 caracteres)' },
+            tags = {'ERROR'}
+        })
+        return
+    end
     
     TriggerClientEvent('chat:addMessage', -1, {
         args = { 'system', name, msg },
@@ -120,8 +133,8 @@ end)
 
 -- /police command (police channel)
 RegisterCommand('police', function(source, args)
-    -- Check permissions (requires ace permission or police job)
-    if not IsPlayerAceAllowed(source, 'chat.police') then
+    -- ✅ FRAMEWORK INTEGRATION: Check permissions via bridge (ESX/QB jobs + ACE fallback)
+    if not IsPlayerPolice(source) then
         TriggerClientEvent('chat:addMessage', source, {
             args = { 'system', 'Sistema', T('errors.no_permission_channel') },
             tags = {'ERROR'}
@@ -140,10 +153,19 @@ RegisterCommand('police', function(source, args)
         return
     end
     
+    -- ✅ SEGURIDAD: Validar longitud del mensaje
+    if string.len(message) > 255 then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = { 'system', 'Sistema', 'Mensaje demasiado largo (máximo 255 caracteres)' },
+            tags = {'ERROR'}
+        })
+        return
+    end
+    
     -- Broadcast to all police
     local players = GetPlayers()
     for _, playerId in ipairs(players) do
-        if IsPlayerAceAllowed(tonumber(playerId), 'chat.police') then
+        if IsPlayerPolice(tonumber(playerId)) then
             TriggerClientEvent('chat:addMessage', playerId, {
                 id = tostring(math.random(1000000, 9999999)),
                 type = 'police',
