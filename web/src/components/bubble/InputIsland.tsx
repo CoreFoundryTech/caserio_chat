@@ -126,25 +126,33 @@ export function InputIsland() {
         // LÓGICA FLECHAS HISTORIAL
         if (e.key === 'ArrowUp') {
             e.preventDefault();
-            if (history.length > 0) {
-                const nextIndex = Math.min(historyIndex + 1, history.length - 1);
-                setHistoryIndex(nextIndex);
-                setInputValue(history[nextIndex]);
-                // Mover cursor al final (pequeño truco de UX)
+            // Flecha Arriba: Navegar al comando anterior
+            if (historyIndex < history.length - 1) {
+                const newIndex = historyIndex + 1;
+                setHistoryIndex(newIndex);
+                setInputValue(history[newIndex]);
+
+                // ✅ UX: Mover cursor al final del input
                 setTimeout(() => {
-                    if (inputRef.current) {
-                        inputRef.current.selectionStart = inputRef.current.selectionEnd = history[nextIndex].length;
-                    }
+                    const len = history[newIndex].length;
+                    inputRef.current?.setSelectionRange(len, len);
                 }, 0);
             }
         }
 
         if (e.key === 'ArrowDown') {
             e.preventDefault();
+            // Flecha Abajo: Navegar al comando siguiente o limpiar
             if (historyIndex > 0) {
-                const nextIndex = historyIndex - 1;
-                setHistoryIndex(nextIndex);
-                setInputValue(history[nextIndex]);
+                const newIndex = historyIndex - 1;
+                setHistoryIndex(newIndex);
+                setInputValue(history[newIndex]);
+
+                // ✅ UX: Mover cursor al final
+                setTimeout(() => {
+                    const len = history[newIndex].length;
+                    inputRef.current?.setSelectionRange(len, len);
+                }, 0);
             } else if (historyIndex === 0) {
                 setHistoryIndex(-1);
                 setInputValue('');

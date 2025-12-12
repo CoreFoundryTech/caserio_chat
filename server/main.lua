@@ -67,6 +67,12 @@ end)
 
 -- /me command (roleplay action)
 RegisterCommand('me', function(source, args)
+    -- ✅ SEGURIDAD: Validar que args sea una tabla
+    if type(args) ~= 'table' then
+        print('^1[Caserio Chat]^7 Invalid args type from player ' .. source)
+        return
+    end
+    
     local message = table.concat(args, ' ')
     local playerName = GetPlayerName(source)
     
@@ -91,6 +97,12 @@ end)
 
 -- /do command (roleplay description)
 RegisterCommand('do', function(source, args)
+    -- ✅ SEGURIDAD: Validar que args sea una tabla
+    if type(args) ~= 'table' then
+        print('^1[Caserio Chat]^7 Invalid args type from player ' .. source)
+        return
+    end
+    
     local message = table.concat(args, ' ')
     local playerName = GetPlayerName(source)
     

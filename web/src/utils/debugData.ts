@@ -8,8 +8,8 @@ const ENABLE_DEBUG_MOCKS = true;
 if (import.meta.env.DEV && isEnvBrowser() && ENABLE_DEBUG_MOCKS) {
     console.log('%c[DEBUG MODE] Running in browser - mock data enabled', 'color: #00ff00; font-weight: bold');
 
-    // Set background for transparency testing
-    document.body.style.backgroundImage = "url('https://i.imgur.com/3m352cO.jpeg')"; // GTA V screenshot
+    // ✅ Set background for transparency testing (no external dependencies)
+    document.body.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
     document.body.style.backgroundSize = "cover";
     document.body.style.backgroundPosition = "center";
 

@@ -9,6 +9,8 @@ export default defineConfig({
     emptyOutDir: true,
     // CAMBIO A ES2022: Menos polyfills, código más limpio, mejor rendimiento
     target: 'es2022',
+    // ✅ OPTIMIZACIÓN: Minificación explícita con esbuild (rápido y eficiente)
+    minify: 'esbuild',
     // Aumentar límite de warning para chunks grandes (emoji picker)
     chunkSizeWarningLimit: 600,
     rollupOptions: {
