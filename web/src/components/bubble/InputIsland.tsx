@@ -21,8 +21,26 @@ export function InputIsland() {
     const [isMounted, setIsMounted] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // NUEVOS ESTADOS PARA HISTORIAL
-    const [history, setHistory] = useState<string[]>([]);
+    // ✅ PERSISTENCIA: Cargar historial desde localStorage
+    const loadHistory = () => {
+        try {
+            const saved = localStorage.getItem('caserio-chat-history');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    };
+
+    const saveHistory = (newHistory: string[]) => {
+        try {
+            localStorage.setItem('caserio-chat-history', JSON.stringify(newHistory));
+        } catch (e) {
+            console.error('Failed to save command history', e);
+        }
+    };
+
+    // Estado para historial de comandos (con persistencia)
+    const [history, setHistory] = useState<string[]>(loadHistory);
     const [historyIndex, setHistoryIndex] = useState(-1);
 
     // OBTENER SUGERENCIAS DINÁMICAS DEL STORE
@@ -105,7 +123,9 @@ export function InputIsland() {
         setHistory(prev => {
             // Si es igual al último, no lo guardes de nuevo
             if (prev.length > 0 && prev[0] === inputValue) return prev;
-            return [inputValue, ...prev].slice(0, 50); // Máximo 50 comandos
+            const newHistory = [inputValue, ...prev].slice(0, 50); // Máximo 50 comandos
+            saveHistory(newHistory); // ✅ Persistir a localStorage
+            return newHistory;
         });
         setHistoryIndex(-1); // Resetear posición
 

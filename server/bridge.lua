@@ -1,10 +1,11 @@
--- Caserio Chat - Server Bridge
+-- Caserio Chat - Server Bridge (Optimized with Cache)
 -- Framework detection and helper functions for ESX/QBCore
 
 local Framework = nil
 local FrameworkType = GetConvar('caserio_chat_framework', 'auto')
+local PlayerJobs = {} -- 🚀 Caché en memoria (Job Name)
 
--- Auto-detect framework
+-- ✅ 1. Detección de Framework
 Citizen.CreateThread(function()
     if FrameworkType == 'auto' then
         if GetResourceState('qb-core') == 'started' then
@@ -22,55 +23,101 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Check if player has police job
-function IsPlayerPolice(source)
-    if FrameworkType == 'qbcore' and Framework then
-        local Player = Framework.Functions.GetPlayer(source)
-        if Player and Player.PlayerData and Player.PlayerData.job then
-            return Player.PlayerData.job.name == 'police'
+-- ✅ 2. Helper para Actualizar Caché
+local function UpdateCachedJob(source, jobName)
+    PlayerJobs[source] = jobName
+end
+
+-- ✅ 3. Eventos del Framework (Listeners)
+if FrameworkType == 'qbcore' then
+    -- Al entrar
+    RegisterNetEvent('QBCore:Server:PlayerLoaded', function(Player)
+        local src = source
+        local xPlayer = Framework.Functions.GetPlayer(src)
+        if xPlayer and xPlayer.PlayerData and xPlayer.PlayerData.job then
+            UpdateCachedJob(src, xPlayer.PlayerData.job.name)
         end
-    elseif FrameworkType == 'esx' and Framework then
-        local xPlayer = Framework.GetPlayerFromId(source)
+    end)
+    
+    -- Al cambiar de trabajo
+    RegisterNetEvent('QBCore:Server:OnJobUpdate', function(source, job)
+        if job and job.name then
+            UpdateCachedJob(source, job.name)
+        end
+    end)
+
+elseif FrameworkType == 'esx' then
+    -- Al entrar
+    RegisterNetEvent('esx:playerLoaded', function(playerId, xPlayer)
         if xPlayer and xPlayer.job then
-            return xPlayer.job.name == 'police'
+            UpdateCachedJob(playerId, xPlayer.job.name)
+        end
+    end)
+
+    -- Al cambiar de trabajo
+    RegisterNetEvent('esx:setJob', function(playerId, job, lastJob)
+        if job and job.name then
+            UpdateCachedJob(playerId, job.name)
+        end
+    end)
+end
+
+-- ✅ 4. Limpieza de Caché (Universal)
+AddEventHandler('playerDropped', function()
+    PlayerJobs[source] = nil
+end)
+
+-- ✅ 5. CRÍTICO: Recuperación ante Reinicio del Script
+-- Si reinicias el script con gente online, llenamos la caché inmediatamente
+Citizen.CreateThread(function()
+    Wait(1000) -- Esperar a que el framework esté listo
+    
+    if FrameworkType == 'qbcore' and Framework then
+        local players = Framework.Functions.GetQBPlayers()
+        local count = 0
+        for _, pl in pairs(players) do
+            if pl and pl.PlayerData and pl.PlayerData.job then
+                UpdateCachedJob(pl.PlayerData.source, pl.PlayerData.job.name)
+                count = count + 1
+            end
+        end
+        if count > 0 then
+            print(string.format('^2[Caserio Chat]^7 Cached jobs for %d online players (QBCore)', count))
+        end
+        
+    elseif FrameworkType == 'esx' and Framework then
+        local players = Framework.GetExtendedPlayers()
+        local count = 0
+        for _, xPlayer in pairs(players) do
+            if xPlayer and xPlayer.source and xPlayer.job then
+                UpdateCachedJob(xPlayer.source, xPlayer.job.name)
+                count = count + 1
+            end
+        end
+        if count > 0 then
+            print(string.format('^2[Caserio Chat]^7 Cached jobs for %d online players (ESX)', count))
         end
     end
-    
-    -- Fallback to ACE permissions
+end)
+
+-- ✅ 6. Funciones Públicas (Lectura desde Caché O(1))
+
+function IsPlayerPolice(source)
+    -- Primero intentamos caché rápida
+    local job = PlayerJobs[source]
+    if job == 'police' then return true end
+
+    -- Fallback: ACE permissions (siempre activo como respaldo)
     return IsPlayerAceAllowed(source, 'chat.police')
 end
 
--- Check if player has EMS job
 function IsPlayerEMS(source)
-    if FrameworkType == 'qbcore' and Framework then
-        local Player = Framework.Functions.GetPlayer(source)
-        if Player and Player.PlayerData and Player.PlayerData.job then
-            return Player.PlayerData.job.name == 'ambulance'
-        end
-    elseif FrameworkType == 'esx' and Framework then
-        local xPlayer = Framework.GetPlayerFromId(source)
-        if xPlayer and xPlayer.job then
-            return xPlayer.job.name == 'ambulance'
-        end
-    end
+    local job = PlayerJobs[source]
+    if job == 'ambulance' then return true end
     
-    -- Fallback to ACE permissions
     return IsPlayerAceAllowed(source, 'chat.ems')
 end
 
--- Generic job check
 function HasJob(source, jobName)
-    if FrameworkType == 'qbcore' and Framework then
-        local Player = Framework.Functions.GetPlayer(source)
-        if Player and Player.PlayerData and Player.PlayerData.job then
-            return Player.PlayerData.job.name == jobName
-        end
-    elseif FrameworkType == 'esx' and Framework then
-        local xPlayer = Framework.GetPlayerFromId(source)
-        if xPlayer and xPlayer.job then
-            return xPlayer.job.name == jobName
-        end
-    end
-    
-    return false
+    return PlayerJobs[source] == jobName
 end

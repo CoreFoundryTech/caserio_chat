@@ -25,3 +25,8 @@ server_scripts {
     'server/filters.lua',
     'server/main.lua'
 }
+
+-- ✅ SEGURIDAD: Rate limiting nativo para prevenir event flooding
+server_event_rate_limiting {
+    ['chat:server:Broadcast'] = 10 -- Max 10 eventos/segundo por jugador
+}

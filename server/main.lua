@@ -38,6 +38,13 @@ end
 -- ✅ SEGURIDAD: Inicializar seed de aleatoriedad con mayor entropía
 math.randomseed(os.time() + os.clock() * 1000)
 
+-- ✅ SEGURIDAD: Sistema de generación de IDs seguro (previene colisiones)
+local messageCounter = 0
+function GenerateMessageID(source)
+    messageCounter = messageCounter + 1
+    return string.format("%d-%d-%d", os.time(), source or 0, messageCounter)
+end
+
 -- Broadcast Event
 RegisterNetEvent('chat:server:Broadcast')
 AddEventHandler('chat:server:Broadcast', function(msg)
@@ -85,7 +92,7 @@ RegisterCommand('me', function(source, args)
     end
     
     TriggerClientEvent('chat:addMessage', -1, {
-        id = tostring(math.random(1000000, 9999999)),
+        id = GenerateMessageID(source),
         type = 'me',
         channel = 'system',
         author = playerName,
@@ -115,7 +122,7 @@ RegisterCommand('do', function(source, args)
     end
     
     TriggerClientEvent('chat:addMessage', -1, {
-        id = tostring(math.random(1000000, 9999999)),
+        id = GenerateMessageID(source),
         type = 'do',
         channel = 'system',
         author = playerName,
@@ -139,7 +146,7 @@ RegisterCommand('ooc', function(source, args)
     end
     
     TriggerClientEvent('chat:addMessage', -1, {
-        id = tostring(math.random(1000000, 9999999)),
+        id = GenerateMessageID(source),
         type = 'system',
         channel = 'ooc',
         author = playerName,
@@ -185,7 +192,7 @@ RegisterCommand('police', function(source, args)
     for _, playerId in ipairs(players) do
         if IsPlayerPolice(tonumber(playerId)) then
             TriggerClientEvent('chat:addMessage', playerId, {
-                id = tostring(math.random(1000000, 9999999)),
+                id = GenerateMessageID(source),
                 type = 'police',
                 channel = 'police',
                 author = playerName,
