@@ -207,6 +207,7 @@ export function InputIsland() {
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={t('ui.input_placeholder')}
+                                maxLength={255}  // ✅ UX: Visual feedback antes de validación server
                                 className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/70 text-base font-medium"
                                 style={{ boxShadow: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
                             />

@@ -35,14 +35,20 @@ function T(key)
     return value or key
 end
 
--- ✅ SEGURIDAD: Inicializar seed de aleatoriedad
-math.randomseed(os.time())
+-- ✅ SEGURIDAD: Inicializar seed de aleatoriedad con mayor entropía
+math.randomseed(os.time() + os.clock() * 1000)
 
 -- Broadcast Event
 RegisterNetEvent('chat:server:Broadcast')
 AddEventHandler('chat:server:Broadcast', function(msg)
     local src = source
     local name = GetPlayerName(src)
+    
+    -- ✅ ROBUSTEZ: Validar tipo antes de procesar
+    if type(msg) ~= 'string' then
+        print('^1[Caserio Chat]^7 Invalid message type from player ' .. src)
+        return
+    end
     
     -- ✅ SEGURIDAD: Validar longitud del mensaje
     if string.len(msg) > 255 then
