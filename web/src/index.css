@@ -2,14 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CRÍTICO: Transparencia total para FiveM */
+/* CRÍTICO: Transparencia total para FiveM - CEF v103 */
 html,
 body,
 #root {
   background-color: transparent !important;
   background: transparent !important;
-  pointer-events: none;
-  /* Permite clicks a través de áreas vacías */
+  /* IMPORTANTE: pointer-events auto en root para que los hijos capturen, pero el fondo sea passthrough */
+  /* pointer-events: none; <--- Esto a veces causa problemas si no se maneja bien en hijos */
   margin: 0;
   padding: 0;
   width: 100%;
@@ -17,12 +17,17 @@ body,
   overflow: hidden;
 }
 
-/* Ocultar scrollbars visualmente pero permitir scroll */
+/* Scrollbar invisible pero funcional */
 ::-webkit-scrollbar {
-  display: none;
+  width: 0px;
+  background: transparent;
 }
 
-/* Animación simple de fallback */
+::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Animaciones */
 @keyframes fade-in {
   from {
     opacity: 0;

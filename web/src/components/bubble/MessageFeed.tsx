@@ -1,5 +1,4 @@
 import { useRef, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { useChatStore } from '../../stores/useChatStore';
 import { MessageBubble } from './MessageBubble';
 
@@ -51,11 +50,9 @@ export function MessageFeed() {
 
     return (
         <div style={getPositionStyles()}>
-            <AnimatePresence mode="popLayout">
-                {messages.map((msg) => (
-                    <MessageBubble key={msg.id} message={msg} settings={settings} />
-                ))}
-            </AnimatePresence>
+            {messages.map((msg) => (
+                <MessageBubble key={msg.id} message={msg} settings={settings} />
+            ))}
             <div ref={messagesEndRef} />
         </div>
     );

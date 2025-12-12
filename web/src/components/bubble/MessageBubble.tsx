@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { User, Eye, Radio, Briefcase, Shield, Ambulance, Terminal } from 'lucide-react';
 import type { Message, ChatSettings } from '../../stores/useChatStore';
 import { sanitizeAndColorize } from '../../utils/sanitize';
@@ -11,12 +10,12 @@ const MESSAGE_TYPE_CONFIG = {
     radio: { icon: Radio, label: 'RADIO', color: '#34d399' },
     police: { icon: Shield, label: 'POLICIA', color: '#60a5fa' },
     ems: { icon: Ambulance, label: 'EMS', color: '#f87171' },
-    system: { icon: Terminal, label: 'SISTEMA', color: '#9ca3af' },
+    system: { icon: Terminal, label: 'SISTEMA', color: '#6b7280' }, // Gris oscuro para sitema en tema claro
     job: { icon: Briefcase, label: 'TRABAJO', color: '#a78bfa' },
 } as const;
 
 const SCALE_STYLES = {
-    small: { fontSize: '12px', padding: '6px 12px' }, // Slight font increase for legibility
+    small: { fontSize: '12px', padding: '6px 12px' },
     medium: { fontSize: '14px', padding: '8px 14px' },
     large: { fontSize: '16px', padding: '10px 18px' },
 };
@@ -31,6 +30,7 @@ interface MessageBubbleProps {
 export const MessageBubble = React.memo(({ message, settings }: MessageBubbleProps) => {
     const isVisible = useChatStore((state) => state.isVisible);
     const [isExpired, setIsExpired] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
     const sizeStyle = SCALE_STYLES[settings.scale] || SCALE_STYLES.medium;
     const typeConfig = MESSAGE_TYPE_CONFIG[message.type || 'system'] || MESSAGE_TYPE_CONFIG.system;
@@ -42,6 +42,10 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
         return () => clearTimeout(timer);
     }, []);
 
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const sanitizedContent = useMemo(() => ({
         author: sanitizeAndColorize(message.author),
         message: sanitizeAndColorize(message.message)
@@ -50,77 +54,78 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
     const shouldFade = isExpired && !isVisible;
 
     const bubbleStyle = {
-        // Fondo muy transparente (20%) + backdrop
-        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-        backdropFilter: 'blur(4px)',
-        borderLeft: `2px solid ${accentColor}`,
-        // Gradiente sutil
-        backgroundImage: `linear-gradient(to right, ${accentColor}10, transparent)`,
-        width: '100%', // Ocupar todo el ancho del contenedor padre
-        borderRadius: '0 8px 8px 0',
+        // MATCHING SCREENSHOT: Fondo blanco semi-transparente (Glassmorphism Claro)
+        // Esto evita los fondos negros típicos de transparencias oscuras
+        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderLeft: `3px solid ${accentColor}`,
+        // Sombra suave en lugar de borde brillante
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+
+        // GPU Acceleration
+        transform: 'translateZ(0)',
+        width: '100%',
+        borderRadius: '0 12px 12px 0',
         padding: sizeStyle.padding,
-        marginBottom: '4px',
+        marginBottom: '6px',
         position: 'relative' as const,
         fontSize: sizeStyle.fontSize,
-        boxShadow: `0 0 10px -5px ${accentColor}40`
+        color: '#1f2937', // Texto oscuro para fondo claro
     };
 
     return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: shouldFade ? 0 : 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ type: "tween", duration: 0.2 }}
-            style={{ width: '100%', pointerEvents: shouldFade ? 'none' : 'auto' }}
+        <div
+            className="transition-all duration-200 ease-out"
+            style={{
+                width: '100%',
+                pointerEvents: shouldFade ? 'none' : 'auto',
+                opacity: isMounted && !shouldFade ? 1 : 0,
+                transform: isMounted && !shouldFade ? 'translateX(0)' : 'translateX(-10px)'
+            }}
         >
-            <div style={bubbleStyle} className="hover:brightness-110 transition-all">
+            <div style={bubbleStyle} className="hover:brightness-105 transition-all">
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', opacity: 0.9 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Icon size={12} color={accentColor} />
+                        <Icon size={14} color={accentColor} />
                         <span style={{
                             color: accentColor,
                             fontSize: '11px',
-                            fontWeight: 'bold',
+                            fontWeight: '900', // Extra bold
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
-                            textShadow: '0 1px 2px rgba(0,0,0,0.8)' // Shadow for readability
                         }}>
                             {typeConfig.label}
                         </span>
                     </div>
 
-                    {!settings.streamerMode ? (
+                    {!settings.streamerMode && (
                         <span
                             style={{
                                 fontSize: '11px',
-                                fontWeight: 600,
-                                color: 'rgba(255,255,255,0.7)',
+                                fontWeight: 700,
+                                color: '#4b5563', // Gris oscuro
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                textShadow: '0 1px 2px rgba(0,0,0,0.8)'
                             }}
                             dangerouslySetInnerHTML={{ __html: sanitizedContent.author }}
                         />
-                    ) : (
-                        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>HIDDEN</span>
                     )}
                 </div>
 
-                {/* Body - Text Shadow Critical */}
+                {/* Body - Texto oscuro para fondo blanco */}
                 <div
                     style={{
-                        color: 'white',
-                        fontWeight: 400,
-                        lineHeight: 1.5,
+                        color: '#374151', // Gris oscuro casi negro
+                        fontWeight: 500,
+                        lineHeight: 1.4,
                         wordBreak: 'break-word',
-                        textShadow: '0 1px 3px rgba(0,0,0,0.9)' // Heavy shadow for white text on transparent bg
+                        textShadow: '0 1px 0 rgba(255,255,255,0.5)' // Highlight shadow para "engraved" look
                     }}
                     dangerouslySetInnerHTML={{ __html: sanitizedContent.message }}
                 />
             </div>
-        </motion.div>
+        </div>
     );
 });
 

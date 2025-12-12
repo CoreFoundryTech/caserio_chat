@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Settings } from 'lucide-react';
 import { useChatStore } from '../../stores/useChatStore';
 import { fetchNui } from '../../utils/fetchNui';
@@ -49,12 +48,18 @@ export function InputIsland() {
     const { isVisible, settings, toggleSettingsModal } = useChatStore();
     const [inputValue, setInputValue] = useState('');
     const [suggestions, setSuggestions] = useState<typeof AVAILABLE_COMMANDS>([]);
+    const [isMounted, setIsMounted] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const chatWidth = CHAT_SIZES[settings.scale] || CHAT_SIZES.medium;
 
     useEffect(() => {
-        if (isVisible) setTimeout(() => inputRef.current?.focus(), 50);
+        if (isVisible) {
+            setTimeout(() => inputRef.current?.focus(), 50);
+            setIsMounted(true);
+        } else {
+            setIsMounted(false);
+        }
     }, [isVisible]);
 
     useEffect(() => {
@@ -105,82 +110,83 @@ export function InputIsland() {
     };
 
     return (
-        <AnimatePresence>
+        <>
             {isVisible && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
+                <div
+                    className="transition-all duration-200 ease-out pointer-events-auto"
                     style={{
                         position: 'fixed',
-                        // Posicionamiento alineado a la izquierda (misma X que el chat)
                         left: '20px',
-                        top: '50%', // Centrado vertical o configurable
-                        width: `${chatWidth}px`, // ANCHO FIJO IMPORTANTE
-                        zIndex: 50
+                        top: '50%',
+                        width: `${chatWidth}px`,
+                        zIndex: 50,
+                        transform: `translateZ(0) ${isMounted ? 'translateY(0)' : 'translateY(20px)'}`,
+                        opacity: isMounted ? 1 : 0,
                     }}
-                    className="pointer-events-auto" // CRÍTICO: Reactiva clicks
                 >
-                    {/* PATRÓN CONTENEDOR BASE (MIAMI VICE) */}
-                    <div className="
-                        relative rounded-xl overflow-hidden
-                        p-[2px] /* Grosor del borde neón */
-                        bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500
-                        shadow-[0_0_20px_rgba(236,72,153,0.3)]
-                    ">
-                        <div className="
-                            w-full h-full
-                            rounded-xl
-                            bg-black/10       /* 10% Transparencia */
-                            backdrop-blur-md  /* Efecto Glass */
-                            flex items-center gap-2 p-3
-                        ">
+                    {/* INPUT ISLAND MATCHING SCREENSHOT */}
+                    <div
+                        className="relative rounded-2xl overflow-hidden shadow-2xl"
+                        style={{
+                            padding: '3px',
+                            // Gradiente vivo como en la foto
+                            background: 'linear-gradient(90deg, #ec4899, #3b82f6, #06b6d4)',
+                            transform: 'translateZ(0)',
+                        }}
+                    >
+                        <div
+                            className="w-full h-full rounded-[14px] flex items-center gap-3 p-4"
+                            style={{
+                                // Fondo con tinte de gradiente pero transparente
+                                background: 'linear-gradient(90deg, rgba(236,72,153,0.8), rgba(59,130,246,0.8))',
+                                backdropFilter: 'blur(10px)',
+                                WebkitBackdropFilter: 'blur(10px)',
+                            }}
+                        >
                             <input
                                 ref={inputRef}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={t('ui.input_placeholder')}
-                                className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/50 text-sm font-medium"
-                                style={{ boxShadow: 'none' }} // Prevenir sombras raras
+                                className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/70 text-base font-medium"
+                                style={{ boxShadow: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
                             />
-                            <button onClick={handleSubmit} className="p-1 hover:scale-110 transition text-cyan-400">
-                                <Send size={18} />
+                            <button onClick={handleSubmit} className="p-1 hover:scale-110 transition text-white/90">
+                                <Send size={20} />
                             </button>
-                            <button onClick={toggleSettingsModal} className="p-1 hover:scale-110 transition text-pink-400">
-                                <Settings size={18} />
+                            <button onClick={toggleSettingsModal} className="p-1 hover:scale-110 transition text-white/90">
+                                <Settings size={20} />
                             </button>
                         </div>
                     </div>
 
-                    {/* SUGERENCIAS DE COMANDOS (Estilo Unificado) */}
-                    <AnimatePresence>
-                        {suggestions.length > 0 && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="
-                                    mt-2 rounded-lg overflow-hidden
-                                    border border-white/10
-                                    bg-black/60 backdrop-blur-xl
-                                "
-                            >
+                    {/* SUGGESTIONS */}
+                    {suggestions.length > 0 && (
+                        <div
+                            className="mt-2 rounded-xl overflow-hidden border border-white/20 shadow-xl transition-opacity duration-200 ease-out"
+                            style={{
+                                background: 'rgba(0, 0, 0, 0.5)', // Fondo oscuro para sugerencias
+                                backdropFilter: 'blur(16px)',
+                                WebkitBackdropFilter: 'blur(16px)',
+                                transform: 'translateZ(0)',
+                                opacity: 1,
+                            }}
+                        >
                                 {suggestions.map((s) => (
                                     <button
                                         key={s.cmd}
                                         onClick={() => { setInputValue(s.cmd + ' '); setSuggestions([]); inputRef.current?.focus(); }}
-                                        className="w-full text-left px-4 py-2 hover:bg-white/10 flex flex-col transition-colors border-b border-white/5 last:border-0"
+                                        className="w-full text-left px-4 py-3 hover:bg-blue-50 flex flex-col transition-colors border-b border-gray-200 last:border-0"
                                     >
-                                        <span className="text-cyan-400 font-bold text-xs">{s.syntax}</span>
-                                        <span className="text-gray-300 text-[10px]">{s.desc}</span>
+                                        <span className="text-blue-600 font-bold text-sm">{s.syntax}</span>
+                                        <span className="text-gray-500 text-xs">{s.desc}</span>
                                     </button>
                                 ))}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </motion.div>
+                        </div>
+                    )}
+                </div>
             )}
-        </AnimatePresence>
+        </>
     );
 }

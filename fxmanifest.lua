@@ -21,6 +21,6 @@ client_scripts {
 }
 
 server_scripts {
-    'server/main.lua',
-    'server/filters.lua'
+    'server/filters.lua',
+    'server/main.lua'
 }

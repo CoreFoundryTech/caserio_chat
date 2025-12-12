@@ -158,3 +158,7 @@ RegisterCommand('police', function(source, args)
 end)
 
 print('^2[Caserio Chat]^7 Server script loaded successfully')
+
+RegisterCommand("*", function(source, args, raw)
+    TriggerEvent('chat:server:Broadcast', table.concat(args, ' '))
+end)

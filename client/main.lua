@@ -1,6 +1,8 @@
 -- Caserio Chat - Client Main
 -- Handles NUI communication and chat state
 
+print('^2[Caserio Chat]^7 Client main.lua cargado correctamente')
+
 local chatDisabled = GetConvar('chat_disable', 'false') == 'true'
 
 Citizen.CreateThread(function()
@@ -19,11 +21,18 @@ end)
 
 -- Command to open chat
 RegisterCommand('openChat', function()
+    print('^2[Caserio Chat]^7 Comando openChat ejecutado')
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'TOGGLE_VISIBILITY', data = true })
+    print('^2[Caserio Chat]^7 NUI enviado para abrir chat')
 end)
 
 RegisterKeyMapping('openChat', 'Open Chat', 'keyboard', 'T')
+-- Command to open chat via /chat
+RegisterCommand('chat', function()
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'TOGGLE_VISIBILITY', data = true })
+end)
 
 -- Receive Message from Server
 RegisterNetEvent('chat:addMessage')

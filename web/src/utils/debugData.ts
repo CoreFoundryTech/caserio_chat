@@ -2,7 +2,7 @@
 export const isEnvBrowser = (): boolean => !(window as any).GetParentResourceName;
 
 // FLAG TO TOGGLE DEBUG MODE
-const ENABLE_DEBUG_MOCKS = false;
+const ENABLE_DEBUG_MOCKS = true;
 
 // Mock NUI messages for development
 if (import.meta.env.DEV && isEnvBrowser() && ENABLE_DEBUG_MOCKS) {
