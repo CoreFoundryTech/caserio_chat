@@ -45,6 +45,43 @@ function GenerateMessageID(source)
     return string.format("%d-%d-%d", os.time(), source or 0, messageCounter)
 end
 
+-- ✅ CRÍTICO: Función centralizada para broadcast con filtrado
+local function SafeBroadcast(source, messageType, channel, author, message, tags, recipients)
+    local resourceName = GetCurrentResourceName()
+    
+    -- Verificar filtro de palabras prohibidas
+    if exports[resourceName]:ContainsBlacklistedWord(message) then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = { 'system', 'Sistema', 'ERROR: ' .. T('errors.blacklisted_word') },
+            tags = {'ERROR'}
+        })
+        return false
+    end
+    
+    -- Enviar mensaje
+    local messageData = {
+        id = GenerateMessageID(source),
+        type = messageType,
+        channel = channel,
+        author = author,
+        message = message,
+        timestamp = os.time() * 1000,
+        tags = tags or {}
+    }
+    
+    if recipients then
+        -- Envío selectivo (ej: solo policía)
+        for _, playerId in ipairs(recipients) do
+            TriggerClientEvent('chat:addMessage', playerId, messageData)
+        end
+    else
+        -- Broadcast global
+        TriggerClientEvent('chat:addMessage', -1, messageData)
+    end
+    
+    return true
+end
+
 -- Broadcast Event
 RegisterNetEvent('chat:server:Broadcast')
 AddEventHandler('chat:server:Broadcast', function(msg)
@@ -91,15 +128,8 @@ RegisterCommand('me', function(source, args)
         return
     end
     
-    TriggerClientEvent('chat:addMessage', -1, {
-        id = GenerateMessageID(source),
-        type = 'me',
-        channel = 'system',
-        author = playerName,
-        message = '* ' .. message,
-        timestamp = os.time() * 1000,
-        tags = {'RP'}
-    })
+    -- ✅ Usar SafeBroadcast para filtrado
+    SafeBroadcast(source, 'me', 'system', playerName, '* ' .. message, {'RP'})
 end)
 
 -- /do command (roleplay description)
@@ -121,15 +151,8 @@ RegisterCommand('do', function(source, args)
         return
     end
     
-    TriggerClientEvent('chat:addMessage', -1, {
-        id = GenerateMessageID(source),
-        type = 'do',
-        channel = 'system',
-        author = playerName,
-        message = '** ' .. message .. ' **',
-        timestamp = os.time() * 1000,
-        tags = {'RP'}
-    })
+    -- ✅ Usar SafeBroadcast para filtrado
+    SafeBroadcast(source, 'do', 'system', playerName, '** ' .. message .. ' **', {'RP'})
 end)
 
 -- /ooc command (out of character)
@@ -145,15 +168,8 @@ RegisterCommand('ooc', function(source, args)
         return
     end
     
-    TriggerClientEvent('chat:addMessage', -1, {
-        id = GenerateMessageID(source),
-        type = 'system',
-        channel = 'ooc',
-        author = playerName,
-        message = message,
-        timestamp = os.time() * 1000,
-        tags = {}
-    })
+    -- ✅ Usar SafeBroadcast para filtrado
+    SafeBroadcast(source, 'system', 'ooc', playerName, message, {})
 end)
 
 -- /police command (police channel)
@@ -187,21 +203,17 @@ RegisterCommand('police', function(source, args)
         return
     end
     
-    -- Broadcast to all police
+    -- Obtener lista de policías
+    local policeRecipients = {}
     local players = GetPlayers()
     for _, playerId in ipairs(players) do
         if IsPlayerPolice(tonumber(playerId)) then
-            TriggerClientEvent('chat:addMessage', playerId, {
-                id = GenerateMessageID(source),
-                type = 'police',
-                channel = 'police',
-                author = playerName,
-                message = message,
-                timestamp = os.time() * 1000,
-                tags = {'POLICE'}
-            })
+            table.insert(policeRecipients, playerId)
         end
     end
+    
+    -- ✅ Usar SafeBroadcast con recipients selectivos
+    SafeBroadcast(source, 'police', 'police', playerName, message, {'POLICE'}, policeRecipients)
 end)
 
 print('^2[Caserio Chat]^7 Server script loaded successfully')

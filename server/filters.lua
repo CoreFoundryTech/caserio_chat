@@ -76,3 +76,7 @@ AddEventHandler('chat:server:Broadcast', function(msg)
 end)
 
 print('^2[Caserio Chat]^7 Filters loaded successfully')
+
+-- ✅ CRÍTICO: Exportar funciones para usar en main.lua
+exports('ContainsBlacklistedWord', ContainsBlacklistedWord)
+exports('IsSpamming', IsSpamming)

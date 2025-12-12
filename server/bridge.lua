@@ -107,15 +107,15 @@ function IsPlayerPolice(source)
     local job = PlayerJobs[source]
     if job == 'police' then return true end
 
-    -- Fallback: ACE permissions (siempre activo como respaldo)
-    return IsPlayerAceAllowed(source, 'chat.police')
+    -- Fallback: ACE permissions (✅ FIX: usar nativa correcta)
+    return IsPrincipalAceAllowed('player.' .. source, 'chat.police')
 end
 
 function IsPlayerEMS(source)
     local job = PlayerJobs[source]
     if job == 'ambulance' then return true end
     
-    return IsPlayerAceAllowed(source, 'chat.ems')
+    return IsPrincipalAceAllowed('player.' .. source, 'chat.ems')
 end
 
 function HasJob(source, jobName)
