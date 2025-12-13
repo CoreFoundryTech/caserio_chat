@@ -29,6 +29,9 @@ export function ChatContainer() {
     const initialX = pos.includes('left') ? -50 : pos.includes('right') ? 50 : 0;
     const initialY = pos.includes('top') ? -20 : pos.includes('bottom') ? 20 : 0;
 
+    // DEBUG: Monitor visibility render
+    console.log('[ChatContainer] Render. Visible:', isVisible, 'Pos:', pos);
+
     return (
         <div
             style={{
@@ -58,7 +61,7 @@ export function ChatContainer() {
                         style={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '10px',
+                            gap: '10px', // Reverted to 10px per user request
                             pointerEvents: 'auto', // Habilitar clicks en el chat
                             position: 'relative' // Para posicionar el Modal relativo a esto si se quisiera
                         }}
@@ -79,6 +82,6 @@ export function ChatContainer() {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 }

@@ -77,6 +77,13 @@ AddEventHandler('chat:addMessage', function(data)
             tags = {}
         }
     end
+
+    -- DETECCIÓN DE TIPO POR CANAL (FIX ROLES)
+    -- Si el canal es 'police', 'ems', 'radio', forzamos el tipo
+    local validTypes = { police = true, ems = true, radio = true, job = true }
+    if validTypes[messageData.channel] then
+        messageData.type = messageData.channel
+    end
     
     -- DETECCIÓN DE MENCIÓN: Comprobar si el mensaje contiene el nombre del jugador
     local playerName = GetPlayerName(PlayerId())
@@ -153,6 +160,7 @@ end)
 -- SISTEMA DE SUGERENCIAS DINÁMICAS
 
 AddEventHandler('chat:addSuggestion', function(name, help, params)
+    print('^3[DEBUG] chat:addSuggestion received for:', name) -- DEBUG LOG
     SendNUIMessage({
         action = 'ADD_SUGGESTION',
         data = {
@@ -171,13 +179,62 @@ AddEventHandler('chat:removeSuggestion', function(name)
 end)
 
 -- Solicitar sugerencias al iniciar (para scripts que cargaron antes que el chat)
+-- Solicitar sugerencias al iniciar (para scripts que cargaron antes que el chat)
+-- Solicitar sugerencias al iniciar (para scripts que cargaron antes que el chat)
 Citizen.CreateThread(function()
     Wait(3000) -- Esperar 3 segundos para asegurar que la UI cargó y React hidrató
+    
+    -- 1. Refrescar scripts externos (Eventos unitarios)
     TriggerEvent('chat:refreshSuggestions')
+    
+    Wait(1000) -- Esperar a que terminen los unitarios
+
+    -- 2. AUTO-DISCOVERY OPTIMIZADO: Buscar comandos nativos
+    local commands = GetRegisteredCommands()
+    local batch = {}
+    
+    for _, command in ipairs(commands) do
+        local cmdName = "/" .. command.name
+        table.insert(batch, {
+            name = cmdName,
+            help = "Comando del sistema",
+            params = {}
+        })
+    end
+
+    -- Enviar TODO en un solo paquete para no congelar la UI
+    if #batch > 0 then
+        SendNUIMessage({
+            action = 'ADD_SUGGESTIONS_BATCH',
+            data = batch
+        })
+        print('^2[Caserio Chat]^7 Auto-Discovery: ' .. #batch .. ' comandos enviados en lote.')
+    end
 end)
 
 -- ✅ COMANDO DEBUG: Forzar recarga de sugerencias si NUI falló al inicio
 RegisterCommand('refreshchat', function()
+    print('^3[DEBUG] Manual refreshchat triggered')
     TriggerEvent('chat:refreshSuggestions')
-    print('^2[Caserio Chat]^7 Sugerencias refrescadas manualmente.')
+
+    -- Auto-Discovery manual Optimizado
+    local commands = GetRegisteredCommands()
+    local batch = {}
+    for _, command in ipairs(commands) do
+        local cmdName = "/" .. command.name
+        table.insert(batch, {
+            name = cmdName,
+            help = "Comando registrado",
+            params = {}
+        })
+    end
+
+    if #batch > 0 then
+        SendNUIMessage({
+            action = 'ADD_SUGGESTIONS_BATCH',
+            data = batch
+        })
+    end
+
+    print('^2[Caserio Chat]^7 Sugerencias (Nativas Batch + Eventos) refrescadas manualmente.')
 end, false)

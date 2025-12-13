@@ -47,6 +47,7 @@ interface ChatState {
     toggleSettingsModal: () => void;
     updateSettings: (settings: Partial<ChatSettings>) => void;
     addSuggestion: (suggestion: CommandSuggestion) => void;
+    addSuggestionsBatch: (suggestions: CommandSuggestion[]) => void;
     removeSuggestion: (name: string) => void;
 }
 
@@ -102,18 +103,42 @@ export const useChatStore = create<ChatState>()(persist(
         updateSettings: (s) => set((state) => ({ settings: { ...state.settings, ...s } })),
 
         // NUEVAS ACCIONES
-        addSuggestion: (s) => set((state) => {
-            // Prevenir duplicados
-            if (state.suggestions.some(x => x.name === s.name)) return state;
-            return { suggestions: [...state.suggestions, s] };
-        }),
-        removeSuggestion: (name) => set((state) => ({
-            suggestions: state.suggestions.filter(s => s.name !== name)
-        })),
+        addSuggestion: (suggestion) =>
+            set((state) => {
+                // Deduplication: Si ya existe, actualizamos los datos, si no, lo agregamos
+                const exists = state.suggestions.some(s => s.name === suggestion.name);
+                if (exists) {
+                    return {
+                        suggestions: state.suggestions.map(s =>
+                            s.name === suggestion.name ? suggestion : s
+                        )
+                    };
+                }
+                return { suggestions: [...state.suggestions, suggestion] };
+            }),
+
+        // ✅ BATCH Action para optimizar carga masiva
+        addSuggestionsBatch: (newSuggestions) =>
+            set((state) => {
+                // Deduplication masiva
+                const currentNames = new Set(state.suggestions.map(s => s.name));
+                const filteredNew = newSuggestions.filter(s => !currentNames.has(s.name));
+
+                if (filteredNew.length === 0) return state;
+
+                return {
+                    suggestions: [...state.suggestions, ...filteredNew]
+                };
+            }),
+
+        removeSuggestion: (name) =>
+            set((state) => ({
+                suggestions: state.suggestions.filter((s) => s.name !== name),
+            })),
     }),
     {
         name: 'caserio-chat-storage',
-        version: 4, // Incrementamos versión por el nuevo campo
+        version: 5, // Bump to 5 for force reset
         partialize: (state) => ({
             settings: state.settings,
             // Don't persist messages or isVisible

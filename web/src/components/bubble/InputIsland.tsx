@@ -122,45 +122,84 @@ export function InputIsland() {
         } catch { }
     };
 
+    // Estado para navegación de sugerencias
+    const [suggestionIndex, setSuggestionIndex] = useState(0); // Index visual
+
+    // Resetear index cuando cambia el input
+    useEffect(() => {
+        setSuggestionIndex(0);
+    }, [inputValue]);
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
+        // AUTOCOMPLETAR CON TAB
+        if (e.key === 'Tab') {
             e.preventDefault();
-            handleSubmit();
+            if (filteredSuggestions.length > 0) {
+                const selected = filteredSuggestions[suggestionIndex];
+                if (selected) {
+                    setInputValue(selected.syntax.split(' ')[0] + ' ');
+                    inputRef.current?.focus();
+                }
+            }
+            return;
         }
 
-        // LÓGICA FLECHAS HISTORIAL
-        if (e.key === 'ArrowUp') {
+        if (e.key === 'Enter') {
             e.preventDefault();
-            // Flecha Arriba: Navegar al comando anterior
-            if (historyIndex < history.length - 1) {
-                const newIndex = historyIndex + 1;
-                setHistoryIndex(newIndex);
-                setInputValue(history[newIndex]);
+            // Si hay una sugerencia seleccionada y el usuario presiona Enter,
+            // ¿deberíamos autocompletar o enviar?
+            // UX Standard: Enter envía lo que hay en el input. Tab autocompleta.
+            // Pero si el usuario "seleccionó" con flechas, a veces espera autocompletar.
+            // Por ahora, Enter envía. Tab es para completar.
+            handleSubmit();
+            return;
+        }
 
-                // ✅ UX: Mover cursor al final del input
-                setTimeout(() => {
-                    const len = history[newIndex].length;
-                    inputRef.current?.setSelectionRange(len, len);
-                }, 0);
+        // NAVEGACIÓN DE SUGERENCIAS (Prioridad sobre historial si hay sugerencias visibles)
+        if (filteredSuggestions.length > 0) {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSuggestionIndex(prev => (prev > 0 ? prev - 1 : filteredSuggestions.length - 1));
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSuggestionIndex(prev => (prev < filteredSuggestions.length - 1 ? prev + 1 : 0));
+                return;
             }
         }
 
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            // Flecha Abajo: Navegar al comando siguiente o limpiar
-            if (historyIndex > 0) {
-                const newIndex = historyIndex - 1;
-                setHistoryIndex(newIndex);
-                setInputValue(history[newIndex]);
+        // LÓGICA FLECHAS HISTORIAL (Solo si NO hay sugerencias o no estamos navegando en ellas)
+        // (Aunque si el usuario escribe "/", filteredSuggestions siempre tendrá algos si hay comandos)
+        // Refinamiento: Si el input empieza con "/", priorizamos sugerencias. Si no, historial.
+        if (!inputValue.startsWith('/')) {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex < history.length - 1) {
+                    const newIndex = historyIndex + 1;
+                    setHistoryIndex(newIndex);
+                    setInputValue(history[newIndex]);
+                    setTimeout(() => {
+                        const len = history[newIndex].length;
+                        inputRef.current?.setSelectionRange(len, len);
+                    }, 0);
+                }
+            }
 
-                // ✅ UX: Mover cursor al final
-                setTimeout(() => {
-                    const len = history[newIndex].length;
-                    inputRef.current?.setSelectionRange(len, len);
-                }, 0);
-            } else if (historyIndex === 0) {
-                setHistoryIndex(-1);
-                setInputValue('');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    const newIndex = historyIndex - 1;
+                    setHistoryIndex(newIndex);
+                    setInputValue(history[newIndex]);
+                    setTimeout(() => {
+                        const len = history[newIndex].length;
+                        inputRef.current?.setSelectionRange(len, len);
+                    }, 0);
+                } else if (historyIndex === 0) {
+                    setHistoryIndex(-1);
+                    setInputValue('');
+                }
             }
         }
     };
@@ -320,7 +359,7 @@ export function InputIsland() {
                                 position: 'relative' // Asegura contexto de apilamiento
                             }}
                         >
-                            {filteredSuggestions.slice(0, 5).map((s) => (
+                            {filteredSuggestions.slice(0, 5).map((s, index) => (
                                 <button
                                     key={s.cmd}
                                     onClick={() => {
@@ -330,19 +369,30 @@ export function InputIsland() {
                                     style={{
                                         width: '100%',
                                         textAlign: 'left',
-                                        padding: '12px 16px',
-                                        background: 'transparent',
+                                        padding: '10px 16px', // Compacto
+                                        // Visual Feedback Condicional
+                                        background: index === suggestionIndex ? 'rgba(59, 130, 246, 0.25)' : 'transparent',
                                         border: 'none',
-                                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                        borderLeft: index === suggestionIndex ? '3px solid #3b82f6' : '3px solid transparent',
+                                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         flexDirection: 'column',
-                                        transition: 'background 0.2s',
+                                        transition: 'all 0.1s',
                                     }}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                    onMouseEnter={() => setSuggestionIndex(index)} // Sync mouse hover with keyboard index
                                 >
-                                    <span style={{ color: 'rgba(59, 130, 246, 1)', fontWeight: 700, fontSize: '14px' }}>{s.syntax}</span>
+                                    <span style={{
+                                        color: index === suggestionIndex ? 'white' : 'rgba(59, 130, 246, 1)',
+                                        fontWeight: 700,
+                                        fontSize: '14px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}>
+                                        {s.syntax}
+                                        {index === suggestionIndex && <span style={{ fontSize: '10px', opacity: 0.7, fontWeight: 400 }}>TAB ↹</span>}
+                                    </span>
                                     <span style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '12px' }}>{s.desc}</span>
                                 </button>
                             ))}

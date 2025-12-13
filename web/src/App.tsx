@@ -23,6 +23,7 @@ function App() {
       if (!action) return;
 
       if (action === 'TOGGLE_VISIBILITY') {
+        console.log('[App] TOGGLE_VISIBILITY received:', data);
         toggle(data);
       }
 
@@ -33,8 +34,13 @@ function App() {
       // NUEVOS HANDLERS PARA SUGERENCIAS DINÁMICAS
       if (action === 'ADD_SUGGESTION' && data) {
         // Debug: Log incoming suggestions to verify they are arriving
-        console.log('[Setup] Suggestion received:', data.name);
+        // console.log('[Setup] Suggestion received:', data.name);
         useChatStore.getState().addSuggestion(data);
+      }
+
+      if (action === 'ADD_SUGGESTIONS_BATCH' && data) {
+        console.log('[Setup] Batch suggestions received:', data.length);
+        useChatStore.getState().addSuggestionsBatch(data);
       }
 
       if (action === 'REMOVE_SUGGESTION') {

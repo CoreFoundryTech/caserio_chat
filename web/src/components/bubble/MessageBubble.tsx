@@ -56,19 +56,35 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
     // ESTILOS ESPECIALES PARA MENCIONES
     const isMention = message.isMention || false;
 
+    // Tinte de fondo basado en el rol (si no es system/me/do)
+    // Convertimos hex a rgba(r,g,b, 0.15) de forma simple o usamos condicionales
+    const isSpecialType = ['police', 'ems', 'radio', 'job'].includes(message.type || '');
+
+    let backgroundColor = 'rgba(20, 20, 30, 0.70)'; // Default Dark Pastel
+    if (isMention) {
+        backgroundColor = 'linear-gradient(90deg, rgba(234, 179, 8, 0.25), rgba(234, 179, 8, 0.10))';
+    } else if (isSpecialType) {
+        // Usamos el color del icono pero con baja opacidad
+        // Hex to RGBA hack simple o hardcodeamos los comunes
+        if (message.type === 'police') backgroundColor = 'rgba(96, 165, 250, 0.20)'; // Blue-400 at 20%
+        else if (message.type === 'ems') backgroundColor = 'rgba(248, 113, 113, 0.20)'; // Red-400 at 20%
+        else if (message.type === 'radio') backgroundColor = 'rgba(52, 211, 153, 0.15)'; // Emerald-400
+        else if (message.type === 'job') backgroundColor = 'rgba(167, 139, 250, 0.15)'; // Purple-400
+    }
+
     const bubbleStyle = {
-        // ✅ TEMA DARK PASTEL
-        background: isMention
-            ? 'linear-gradient(90deg, rgba(234, 179, 8, 0.15), rgba(234, 179, 8, 0.05))'
-            : 'rgba(20, 20, 30, 0.70)', // Fondo oscuro semitransparente
+        // ✅ TEMA DARK PASTEL + COLOR TINT
+        background: backgroundColor,
 
         // Borde izquierdo de color
         borderLeft: isMention
             ? `3px solid #EAB308`
             : `3px solid ${accentColor}`,
 
-        // Sombra suave
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        // Sombra suave (con hint de color si es special)
+        boxShadow: isSpecialType
+            ? `0 2px 8px -2px ${accentColor}40` // 40 = 25% opacity hex
+            : '0 2px 4px rgba(0,0,0,0.1)',
 
         // GPU Acceleration
         transform: 'translateZ(0)',
