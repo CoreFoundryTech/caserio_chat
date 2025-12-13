@@ -27,26 +27,25 @@ export function MessageFeed() {
         return messages.filter(msg => msg.channel === activeChannel);
     }, [messages, activeChannel]);
 
-    // Estilos del contenedor
+    // Estilos del contenedor (AHORA RELATIVO A ChatContainer)
     const getPositionStyles = (): React.CSSProperties => {
         return {
-            position: 'fixed',
-            left: '20px',
+            position: 'relative', // ✅ RELATIVO
             width: `${chatWidth}px`,
-            bottom: 'calc(50% + 30px)',
-            height: '35vh', // Altura fija necesaria para virtualización
+            height: '35vh',
             zIndex: 40,
 
             // Máscara para desvanecimiento suave arriba
             maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)',
             WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)',
 
-            // Pointer events condicionales (CRÍTICO)
+            // Pointer events
             pointerEvents: isVisible ? 'auto' : 'none',
         };
     };
 
-    if (filteredMessages.length === 0) return null;
+    // if (filteredMessages.length === 0) return null; // ❌ ESTO CAUSABA EL SALTO DE LAYOUT.
+    // ✅ FIX: Siempre renderizar el contenedor para mantener el espacio vital.
 
     return (
         <div

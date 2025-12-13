@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Send, Settings, Smile } from 'lucide-react';
 import type { EmojiClickData } from 'emoji-picker-react';
 import { useChatStore } from '../../stores/useChatStore';
@@ -43,19 +43,31 @@ export function InputIsland() {
     const [history, setHistory] = useState<string[]>(loadHistory);
     const [historyIndex, setHistoryIndex] = useState(-1);
 
-    // OBTENER SUGERENCIAS DINÁMICAS DEL STORE
-    const suggestionsList = useChatStore((state) => state.suggestions);
-
-    // Tipo para sugerencias locales (UI)
-    interface LocalSuggestion {
-        cmd: string;
-        syntax: string;
-        desc: string;
-    }
-    const [suggestions, setSuggestions] = useState<LocalSuggestion[]>([]);
-
-    // ESTADO PARA EMOJI PICKER
+    // Estado para el manejo de emojis
     const [showEmojis, setShowEmojis] = useState(false);
+
+    // ✅ SUGERENCIAS: Obtener del store (vienen del servidor FiveM)
+    const suggestions = useChatStore((state) => state.suggestions);
+
+    // Filtrar sugerencias según el input
+    const filteredSuggestions = useMemo(() => {
+        if (!inputValue.startsWith('/')) return [];
+        const query = inputValue.toLowerCase().slice(1);
+
+        // Mapear sugerencias del servidor al formato local
+        const mapped = suggestions.map(s => ({
+            cmd: s.name,
+            syntax: `${s.name} ${s.params ? s.params.map(p => `[${p.name}]`).join(' ') : ''}`,
+            desc: s.help
+        }));
+
+        if (!query) return mapped; // Mostrar todos si solo escribió "/"
+
+        return mapped.filter(cmd =>
+            cmd.cmd.toLowerCase().includes(query) ||
+            cmd.desc.toLowerCase().includes(query)
+        );
+    }, [inputValue, suggestions]);
 
     const chatWidth = CHAT_SIZES[settings.scale] || CHAT_SIZES.medium;
 
@@ -88,33 +100,7 @@ export function InputIsland() {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isVisible, showEmojis]); // Agregar showEmojis a dependencias
-
-    useEffect(() => {
-        if (inputValue.startsWith('/')) {
-            const query = inputValue.toLowerCase().split(' ')[0];
-
-            // Mostrar si escribes al menos 1 caracter después del /
-            if (query.length >= 1) {
-                // Filtrar lista real del store
-                const matches = suggestionsList
-                    .filter(c => c.name.toLowerCase().startsWith(query))
-                    .slice(0, 5);
-
-                // Formatear para la UI
-                setSuggestions(matches.map(s => ({
-                    cmd: s.name,
-                    // Crea una sintaxis bonita: /comando [id] [razón]
-                    syntax: `${s.name} ${s.params ? s.params.map(p => `[${p.name}]`).join(' ') : ''}`,
-                    desc: s.help
-                })));
-            } else {
-                setSuggestions([]);
-            }
-        } else {
-            setSuggestions([]);
-        }
-    }, [inputValue, suggestionsList]); // Agrega suggestionsList a dependencias
+    }, [isVisible, showEmojis]);
 
     const handleSubmit = async () => {
         if (!inputValue.trim()) return;
@@ -132,7 +118,6 @@ export function InputIsland() {
         try {
             await fetchNui('sendMessage', { message: inputValue });
             setInputValue('');
-            setSuggestions([]);
             inputRef.current?.focus();
         } catch { }
     };
@@ -178,14 +163,6 @@ export function InputIsland() {
                 setInputValue('');
             }
         }
-
-        if (e.key === 'Tab' && suggestions.length > 0) {
-            e.preventDefault();
-            const currentCmd = inputValue.split(' ')[0];
-            if (currentCmd.toLowerCase() !== suggestions[0].cmd.toLowerCase()) {
-                setInputValue(suggestions[0].cmd + ' ');
-            }
-        }
     };
 
     // MANEJADOR DE EMOJIS
@@ -201,32 +178,27 @@ export function InputIsland() {
                 <div
                     className="transition-all duration-200 ease-out pointer-events-auto"
                     style={{
-                        position: 'fixed',
-                        left: '20px',
-                        top: '50%',
+                        position: 'relative', // ✅ RELATIVO A ChatContainer
                         width: `${chatWidth}px`,
                         zIndex: 50,
-                        transform: `translateZ(0) ${isMounted ? 'translateY(0)' : 'translateY(20px)'}`,
                         opacity: isMounted ? 1 : 0,
                     }}
                 >
-                    {/* INPUT ISLAND MATCHING SCREENSHOT */}
+                    {/* INPUT ISLAND - DARK PASTEL */}
                     <div
-                        className="relative rounded-2xl overflow-hidden shadow-2xl"
+                        className="relative rounded-xl overflow-hidden"
                         style={{
-                            padding: '3px',
-                            // Gradiente vivo como en la foto
-                            background: 'linear-gradient(90deg, #ec4899, #3b82f6, #06b6d4)',
+                            padding: '1px', // Borde fino
+                            background: 'rgba(255, 255, 255, 0.1)', // Borde sutil
                             transform: 'translateZ(0)',
                         }}
                     >
                         <div
-                            className="w-full h-full rounded-[14px] flex items-center gap-3 p-4"
+                            className="w-full h-full rounded-[10px] flex items-center gap-3 p-3"
                             style={{
-                                // Fondo con tinte de gradiente pero transparente
-                                background: 'linear-gradient(90deg, rgba(236,72,153,0.8), rgba(59,130,246,0.8))',
-                                backdropFilter: 'blur(10px)',
-                                WebkitBackdropFilter: 'blur(10px)',
+                                // ✅ TEMA DARK PASTEL (Sólido oscuro, sin blur)
+                                background: 'rgba(20, 20, 30, 0.85)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.2)', // Sombra suave permitida ahora
                             }}
                         >
                             <input
@@ -235,21 +207,63 @@ export function InputIsland() {
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={t('ui.input_placeholder')}
-                                maxLength={255}  // ✅ UX: Visual feedback antes de validación server
-                                className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/70 text-base font-medium"
-                                style={{ boxShadow: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
+                                maxLength={255}
+                                style={{
+                                    flex: 1,
+                                    background: 'transparent',
+                                    border: 'none',
+                                    outline: 'none',
+                                    color: 'rgba(255, 255, 255, 1)',
+                                    fontSize: '16px',
+                                    fontWeight: 500,
+                                    boxShadow: 'none',
+                                    textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                                }}
                             />
                             <button
                                 onClick={() => setShowEmojis(!showEmojis)}
-                                className="p-1 hover:scale-110 transition text-white/90"
+                                style={{
+                                    padding: '4px',
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'transform 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 title="Emojis"
                             >
                                 <Smile size={20} />
                             </button>
-                            <button onClick={handleSubmit} className="p-1 hover:scale-110 transition text-white/90">
+                            <button
+                                onClick={handleSubmit}
+                                style={{
+                                    padding: '4px',
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'transform 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
                                 <Send size={20} />
                             </button>
-                            <button onClick={toggleSettingsModal} className="p-1 hover:scale-110 transition text-white/90">
+                            <button
+                                onClick={toggleSettingsModal}
+                                style={{
+                                    padding: '4px',
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'transform 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            >
                                 <Settings size={20} />
                             </button>
                         </div>
@@ -292,25 +306,44 @@ export function InputIsland() {
                     )}
 
                     {/* SUGGESTIONS - Solo mostrar si el emoji picker NO está abierto */}
-                    {suggestions.length > 0 && !showEmojis && (
+                    {filteredSuggestions.length > 0 && (
                         <div
-                            className="mt-2 rounded-xl overflow-hidden border border-white/20 shadow-xl transition-opacity duration-200 ease-out"
                             style={{
-                                background: 'rgba(0, 0, 0, 0.5)', // Fondo oscuro para sugerencias
-                                backdropFilter: 'blur(16px)',
-                                WebkitBackdropFilter: 'blur(16px)',
-                                transform: 'translateZ(0)',
-                                opacity: 1,
+                                marginTop: '8px',
+                                borderRadius: '12px',
+                                overflow: 'hidden',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.5)', // Sombra más fuerte
+                                transition: 'opacity 0.2s',
+                                background: 'rgba(20, 20, 30, 0.98)', // Fondo sólido oscuro
+                                zIndex: 9999, // ✅ FIX: Z-Index extremo para asegurar visibilidad
+                                position: 'relative' // Asegura contexto de apilamiento
                             }}
                         >
-                            {suggestions.map((s) => (
+                            {filteredSuggestions.slice(0, 5).map((s) => (
                                 <button
                                     key={s.cmd}
-                                    onClick={() => { setInputValue(s.cmd + ' '); setSuggestions([]); inputRef.current?.focus(); }}
-                                    className="w-full text-left px-4 py-3 hover:bg-blue-50 flex flex-col transition-colors border-b border-gray-200 last:border-0"
+                                    onClick={() => {
+                                        setInputValue(s.syntax.split(' ')[0] + ' '); // Solo el comando base
+                                        inputRef.current?.focus();
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        padding: '12px 16px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        transition: 'background 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                 >
-                                    <span className="text-blue-600 font-bold text-sm">{s.syntax}</span>
-                                    <span className="text-gray-500 text-xs">{s.desc}</span>
+                                    <span style={{ color: 'rgba(59, 130, 246, 1)', fontWeight: 700, fontSize: '14px' }}>{s.syntax}</span>
+                                    <span style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '12px' }}>{s.desc}</span>
                                 </button>
                             ))}
                         </div>

@@ -36,7 +36,7 @@ function T(key)
 end
 
 -- ✅ SEGURIDAD: Inicializar seed de aleatoriedad con mayor entropía
-math.randomseed(os.time() + os.clock() * 1000)
+math.randomseed(os.time())
 
 -- ✅ SEGURIDAD: Sistema de generación de IDs seguro (previene colisiones)
 local messageCounter = 0

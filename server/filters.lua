@@ -50,6 +50,9 @@ function ContainsBlacklistedWord(message)
     return false
 end
 
+-- 🔴 CRÍTICO: REGISTRAR el evento de red (sin esto FiveM da error "not safe for net")
+RegisterNetEvent('chat:server:Broadcast')
+
 -- Hook into broadcast event to apply filters
 AddEventHandler('chat:server:Broadcast', function(msg)
     local src = source

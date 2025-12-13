@@ -57,33 +57,28 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
     const isMention = message.isMention || false;
 
     const bubbleStyle = {
-        // MATCHING SCREENSHOT: Fondo blanco semi-transparente (Glassmorphism Claro)
-        // Si es mención, añadir gradiente dorado sutil
+        // ✅ TEMA DARK PASTEL
         background: isMention
             ? 'linear-gradient(90deg, rgba(234, 179, 8, 0.15), rgba(234, 179, 8, 0.05))'
-            : 'rgba(255, 255, 255, 0.85)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+            : 'rgba(20, 20, 30, 0.70)', // Fondo oscuro semitransparente
 
-        // Borde dorado si es mención, sino color del canal
+        // Borde izquierdo de color
         borderLeft: isMention
             ? `3px solid #EAB308`
             : `3px solid ${accentColor}`,
 
-        // Sombra mejorada + resplandor dorado si es mención
-        boxShadow: isMention
-            ? '0 0 15px rgba(234, 179, 8, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-            : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        // Sombra suave
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
 
         // GPU Acceleration
         transform: 'translateZ(0)',
         width: '100%',
-        borderRadius: '0 12px 12px 0',
+        borderRadius: '0 10px 10px 0',
         padding: sizeStyle.padding,
         marginBottom: '6px',
         position: 'relative' as const,
         fontSize: sizeStyle.fontSize,
-        color: '#1f2937', // Texto oscuro para fondo claro
+        color: 'rgba(255, 255, 255, 0.90)', // Texto claro
 
         // ✨ Animación de pulso para menciones
         animation: isMention ? 'mentionPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
@@ -99,14 +94,23 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
                 transform: isMounted && !shouldFade ? 'translateX(0)' : 'translateX(-10px)'
             }}
         >
-            <div style={bubbleStyle} className="hover:brightness-105 transition-all">
+            <div style={bubbleStyle} className="hover:brightness-110 transition-all">
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Icon size={14} color={accentColor} />
+
+                    {/* BADGE TIPO DE MENSAJE */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: accentColor,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                    }}>
+                        <Icon size={11} color="white" />
                         <span style={{
-                            color: accentColor,
-                            fontSize: '11px',
+                            color: 'white',
+                            fontSize: '10px',
                             fontWeight: '900', // Extra bold
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
@@ -118,25 +122,23 @@ export const MessageBubble = React.memo(({ message, settings }: MessageBubblePro
                     {!settings.streamerMode && (
                         <span
                             style={{
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                color: '#4b5563', // Gris oscuro
-                                textTransform: 'uppercase',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                color: 'rgba(255, 255, 255, 0.8)', // Gris claro
                             }}
                             dangerouslySetInnerHTML={{ __html: sanitizedContent.author }}
                         />
                     )}
                 </div>
 
-                {/* Body - Texto oscuro para fondo blanco */}
+                {/* Body - Texto Blanco */}
                 <div
                     style={{
-                        color: '#374151', // Gris oscuro casi negro
+                        color: 'rgba(255, 255, 255, 0.95)', // Blanco casi puro
                         fontWeight: 500,
                         lineHeight: 1.4,
                         wordBreak: 'break-word',
-                        // Sombra de texto sutil para nitidez extrema
-                        textShadow: '0px 0px 1px rgba(0,0,0,0.1)'
+                        textShadow: '0 1px 1px rgba(0,0,0,0.2)'
                     }}
                     dangerouslySetInnerHTML={{ __html: sanitizedContent.message }}
                 />

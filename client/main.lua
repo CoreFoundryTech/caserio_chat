@@ -172,6 +172,12 @@ end)
 
 -- Solicitar sugerencias al iniciar (para scripts que cargaron antes que el chat)
 Citizen.CreateThread(function()
-    Wait(1000) -- Esperar un segundo para asegurar que la UI cargó
+    Wait(3000) -- Esperar 3 segundos para asegurar que la UI cargó y React hidrató
     TriggerEvent('chat:refreshSuggestions')
 end)
+
+-- ✅ COMANDO DEBUG: Forzar recarga de sugerencias si NUI falló al inicio
+RegisterCommand('refreshchat', function()
+    TriggerEvent('chat:refreshSuggestions')
+    print('^2[Caserio Chat]^7 Sugerencias refrescadas manualmente.')
+end, false)
